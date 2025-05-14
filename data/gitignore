@@ -1,0 +1,7 @@
+# Ignore all contents of the data folder except this README and metadata
+*
+!.gitignore
+!README.md
+!metadata.md
+!download.sh
+
