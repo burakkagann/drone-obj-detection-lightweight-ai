@@ -1,0 +1,7 @@
+augmentation:
+  fog:
+    intensity: 0.4
+    visibility: 0.6
+  night:
+    gamma: 0.5
+    glare: true
