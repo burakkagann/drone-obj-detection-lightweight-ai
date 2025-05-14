@@ -5,3 +5,7 @@ numpy
 matplotlib
 PyYAML
 tqdm
+cv2
+argparse
+os
+

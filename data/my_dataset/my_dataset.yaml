@@ -1,0 +1,8 @@
+# my_dataset.yaml
+
+path: ../data/my_dataset/visdrone  # root dataset path
+train: images/train
+val: images/val
+
+nc: 10  # number of classes
+names: ['pedestrian', 'people', 'bicycle', 'car', 'van', 'truck', 'tricycle', 'awning-tricycle', 'bus', 'motor']

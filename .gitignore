@@ -1,0 +1,58 @@
+# Ignore Python virtual environments
+yolov5-env/
+
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# VSCode settings
+.vscode/
+
+# Environment files
+.env
+*.env
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# Training output logs and cache
+*.log
+*.cache
+runs/
+*.pt
+
+# Ultralytics settings and model downloads
+*.onnx
+*.mlmodel
+*.torchscript
+*.engine
+*.tflite
+*.pb
+*.trt
+*.npy
+*.bin
+
+# TensorBoard logs
+events.out.tfevents.*
+
+# YOLOv5 training cache
+*.cache
+*.jpg.cache
+*.png.cache
+*.labels.cache
+
+# Dataset folders that are too large to track
+data/raw/
+data/augmented/
+data/my_dataset/visdrone/labels/train.cache
