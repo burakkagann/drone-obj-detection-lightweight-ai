@@ -1,0 +1,7 @@
+# Add your Python package dependencies here
+torch
+opencv-python
+numpy
+matplotlib
+PyYAML
+tqdm

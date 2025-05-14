@@ -5,3 +5,5 @@ augmentation:
   night:
     gamma: 0.5
     glare: true
+  blur:
+    kernel_size: 5
