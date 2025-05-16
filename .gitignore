@@ -55,4 +55,4 @@ events.out.tfevents.*
 # Dataset folders that are too large to track
 data/raw/
 data/augmented/
-data/my_dataset/visdrone/labels/train.cache
+data/my_dataset/visdrone/
