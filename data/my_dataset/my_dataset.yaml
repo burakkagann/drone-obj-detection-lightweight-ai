@@ -1,8 +1,11 @@
 # my_dataset.yaml
 
-path: ../data/my_dataset/visdrone  # root dataset path
+path: ../../data/my_dataset/visdrone  # root dataset path (relative to config)
 train: images/train
 val: images/val
+
+labels_train: labels/train  # define label directory explicitly
+labels_val: labels/val      # define label directory explicitly
 
 nc: 10  # number of classes
 names: ['pedestrian', 'people', 'bicycle', 'car', 'van', 'truck', 'tricycle', 'awning-tricycle', 'bus', 'motor']
