@@ -1,11 +1,13 @@
-# Add your Python package dependencies here
-torch
-opencv-python
-numpy
-matplotlib
-PyYAML
-tqdm
-cv2
-argparse
-os
+# Core dependencies
+torch==2.7.0  # PyTorch version for both YOLOv5n and YOLOv8n
+opencv-python==4.11.0.86  # OpenCV for image processing
+numpy==2.2.6  # Version of NumPy
+matplotlib==3.10.3  # For plotting
+PyYAML==6.0.2  # YAML handling
+tqdm==4.67.1  # Progress bars for training
+argparse  # Command-line argument parsing (part of Python Standard Library, optional to include)
+# os is part of Python Standard Library, so no need to include it here
 
+# Additional dependencies for exporting models and data handling
+pandas==1.4.2  # For model export and data manipulation (required by YOLOv5 and YOLOv8 export)
+scikit-learn==1.0.2  # For model evaluation (optional, can be included if needed)
