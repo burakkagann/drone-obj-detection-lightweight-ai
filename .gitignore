@@ -1,6 +1,3 @@
-# Ignore Python virtual environments
-yolov5-env/
-
 # Byte-compiled / cache files
 __pycache__/
 *.py[cod]
@@ -15,10 +12,6 @@ build/
 
 # VSCode settings
 .vscode/
-
-# Environment files
-.env
-*.env
 
 # OS-specific files
 .DS_Store
@@ -56,3 +49,9 @@ events.out.tfevents.*
 data/raw/
 data/augmented/
 data/my_dataset/visdrone/
+
+# Backup Scripts and Files
+back-up-scripts/
+
+# Virtol Environment
+venvs/

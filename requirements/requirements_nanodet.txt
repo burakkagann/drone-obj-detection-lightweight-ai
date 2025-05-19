@@ -1,0 +1,9 @@
+torch==2.7.0
+opencv-python==4.11.0.86
+numpy==1.23.5
+matplotlib==3.10.3
+PyYAML==6.0.2
+tqdm==4.67.1
+argparse
+scipy==1.8.0
+pandas==1.4.2
