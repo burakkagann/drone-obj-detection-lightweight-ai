@@ -2,27 +2,6 @@
 
 This repository contains the code, configuration, and structure for the master's thesis project on robust object detection in low-visibility conditions using lightweight AI models.
 
-## Project Structure
-drone-obj-detection-lightweight-ai/
-│
-├── src/
-│ ├── models/ # YOLOv5, YOLOv8, MobileNet-SSD model files
-│ ├── scripts/ # Scripts for running training
-│ ├── data/ # Dataset and dataset processing code
-│ └── utils/ # Utility scripts (e.g., for data preprocessing)
-├── requirements/ # Folder containing the requirements for each model
-│ ├── requirements_yolov5n.txt # YOLOv5n dependencies
-│ ├── requirements_yolov8n.txt # YOLOv8n dependencies
-│ ├── requirements_mobilenet_ssd.txt# MobileNet-SSD dependencies
-│ └── requirements_tensorflow.txt # TensorFlow dependencies
-├── venvs/ # Virtual environments for each model
-│ ├── yolov5n_env/ # Virtual environment for YOLOv5n
-│ ├── yolov8n_env/ # Virtual environment for YOLOv8n
-│ ├── mobilenet_env/ # Virtual environment for MobileNet-SSD
-│ └── tensorflow_env/ # Virtual environment for TensorFlow
-├── data/
-│ ├── my_dataset/ # Custom dataset folder
-│ └── visdrone/ # Example dataset for VisDrone challenge
 
 ## Setup Instructions
 
