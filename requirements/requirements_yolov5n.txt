@@ -1,0 +1,14 @@
+# Core dependencies
+torch==2.7.0  # PyTorch version for YOLOv5n
+opencv-python==4.11.0.86  # OpenCV for image processing
+numpy==2.2.6  # Version of NumPy
+matplotlib==3.10.3  # For plotting
+PyYAML==6.0.2  # YAML handling
+tqdm==4.67.1  # Progress bars for training
+
+# Exporting dependencies
+pandas==2.0.1  # For model export and data manipulation (required by YOLOv5 and YOLOv8 export)
+scikit-learn==1.0.2  # For model evaluation (optional, can be included if needed)
+
+# TensorFlow compatible with Python 3.10
+tensorflow==2.10.0
