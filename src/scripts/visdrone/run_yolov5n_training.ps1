@@ -13,12 +13,6 @@ function Start-Venv {
     Write-Host "Activated virtual environment: $env:VIRTUAL_ENV"
 }
 
-# Step 2: Function to deactivate virtual environment
-function Stop-Venv {
-    Write-Host "Stopping virtual environment..."
-    deactivate
-}
-
 # Step 3: Function to clean up cache files
 function Clean-Cache {
     Write-Host "Cleaning up cache files..."
@@ -42,9 +36,6 @@ function Run-Training {
 
     # Train YOLOv5n model
     Train-YOLOv5
-
-    # Stop virtual environment
-    Stop-Venv
 }
 
 # Run the training process
