@@ -1,11 +1,13 @@
 # my_dataset.yaml
 
-path: ../../data/my_dataset/visdrone  # root dataset path (relative to config)
-train: images/train
-val: images/val
+path: C:/Users/burak/OneDrive/Desktop/Git Repos/drone-obj-detection-lightweight-ai/data/my_dataset/visdrone
 
-labels_train: labels/train  # define label directory explicitly
-labels_val: labels/val      # define label directory explicitly
+train: C:/Users/burak/OneDrive/Desktop/Git Repos/drone-obj-detection-lightweight-ai/data/my_dataset/visdrone/images/train
+val:   C:/Users/burak/OneDrive/Desktop/Git Repos/drone-obj-detection-lightweight-ai/data/my_dataset/visdrone/images/val
 
-nc: 10  # number of classes
+labels_train: C:/Users/burak/OneDrive/Desktop/Git Repos/drone-obj-detection-lightweight-ai/data/my_dataset/visdrone/labels/train
+labels_val:   C:/Users/burak/OneDrive/Desktop/Git Repos/drone-obj-detection-lightweight-ai/data/my_dataset/visdrone/labels/val
+
+nc: 10
+
 names: ['pedestrian', 'people', 'bicycle', 'car', 'van', 'truck', 'tricycle', 'awning-tricycle', 'bus', 'motor']

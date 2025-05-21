@@ -1,7 +1,7 @@
 # Ensure the script stops on errors
 $ErrorActionPreference = "Stop"
 
-# Step 1: Function to activate virtual environment
+# Step 1: Function to start virtual environment
 function Start-Venv {
     Write-Host "Starting YOLOv5 virtual environment..."
     $env:VIRTUAL_ENV = "C:\Users\burak\OneDrive\Desktop\Git Repos\drone-obj-detection-lightweight-ai\venvs\yolov5n_env"  # Path to your YOLOv5 virtual environment
@@ -23,7 +23,7 @@ function Clean-Cache {
 # Step 4: Function to train YOLOv5
 function Train-YOLOv5 {
     Write-Host "Starting YOLOv5n training..."
-    python ..\..\..\src\models\YOLOv5\train.py --img 640 --batch 16 --epochs 5 --data ..\config\my_dataset.yaml --weights yolov5n.pt --name yolo5n_baseline
+    python ..\..\..\src\models\YOLOv5\train.py --img 640 --batch 16 --epochs 5 --data ..\..\..\config\my_dataset.yaml --weights yolov5n.pt --name yolo5n_baseline
 }
 
 # Main script execution
