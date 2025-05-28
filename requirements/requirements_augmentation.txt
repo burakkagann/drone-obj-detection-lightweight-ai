@@ -9,3 +9,4 @@ albumentations
 Pillow
 torch
 ultralytics
+scikit-image
