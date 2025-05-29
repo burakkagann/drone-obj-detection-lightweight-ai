@@ -1,7 +1,7 @@
 import cv2
-from augment.fog import add_fog
-from augment.night import simulate_night
-from augment.sensor_distortions import add_sensor_effects
+from fog import add_fog
+from night import simulate_night
+from sensor_distortions import add_sensor_effects
 from utils.visualization import plot_histograms
 from utils.metrics import compute_ssim, compute_psnr
 
