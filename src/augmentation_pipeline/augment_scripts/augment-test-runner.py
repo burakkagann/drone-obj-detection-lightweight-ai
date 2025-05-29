@@ -1,9 +1,11 @@
 import sys
 import os
+import yaml
+import cv2
 
+# Setup project path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-import cv2
 from fog import add_fog
 from night import simulate_night
 from sensor_distortions import add_sensor_effects
@@ -11,11 +13,15 @@ from utils.visualization import plot_histograms
 from utils.metrics import compute_ssim, compute_psnr
 from evaluation.compare_metrics import evaluate_augmentations
 
-
+# Directories
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 RAW_DIR = os.path.join(BASE_DIR, "data", "raw", "visdrone")
 AUG_DIR = os.path.join(BASE_DIR, "data", "augmented")
+CONFIG_PATH = os.path.abspath(os.path.join(BASE_DIR, "..", "..", "config", "augmentation_config.yaml"))
 
+# Load config
+with open(CONFIG_PATH, 'r') as f:
+    config = yaml.safe_load(f)
 
 def ensure_dir(path):
     os.makedirs(path, exist_ok=True)
@@ -25,9 +31,9 @@ def process_image(filename):
     path = os.path.join(RAW_DIR, filename)
     image = cv2.imread(path)
 
-    fogged = add_fog(image)
-    night = simulate_night(image)
-    distorted = add_sensor_effects(image)
+    fogged = add_fog(image, config["fog"])
+    night = simulate_night(image, config["night"])
+    distorted = add_sensor_effects(image, config["sensor"])
 
     ensure_dir(AUG_DIR)
     cv2.imwrite(os.path.join(AUG_DIR, f"fogged_{filename}"), fogged)
