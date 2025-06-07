@@ -49,6 +49,7 @@ events.out.tfevents.*
 data/raw/
 data/augmented/
 data/my_dataset/visdrone/
+data/my_dataset/dota/
 
 # Backup Scripts and Files
 back-up-scripts/
