@@ -20,7 +20,19 @@ function Clean-Cache {
 # Step 3: Function to train YOLOv8
 function Train-YOLOv8 {
     Write-Host "Starting YOLOv8n training..."
-    yolo train model=yolov8n.pt data="C:\Users\burak\OneDrive\Desktop\Git Repos\drone-obj-detection-lightweight-ai\config\my_dataset.yaml" epochs=5 batch=16 imgsz=640 name=yolov8n_baseline
+    yolo train `
+        model=yolov8n.pt `
+        data="C:\Users\burak\OneDrive\Desktop\Git Repos\drone-obj-detection-lightweight-ai\config\my_dataset.yaml" `
+        epochs=50 `
+        batch=32 `
+        imgsz=640 `
+        name=yolov8n_baseline `
+        patience=10 `
+        save-period=5 `
+        device=0 `
+        workers=4 `
+        project=runs/train `
+        exist_ok
 }
 
 

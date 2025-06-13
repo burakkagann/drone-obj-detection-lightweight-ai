@@ -23,7 +23,19 @@ function Clean-Cache {
 # Step 4: Function to train YOLOv5
 function Train-YOLOv5 {
     Write-Host "Starting YOLOv5n training..."
-    python ..\..\..\src\models\YOLOv5\train.py --img 640 --batch 16 --epochs 5 --data ..\..\..\config\my_dataset.yaml --weights yolov5n.pt --name yolo5n_baseline
+    python ..\..\..\src\models\YOLOv5\train.py `
+        --img 640 `
+        --batch 16 `
+        --epochs 50 `
+        --data ..\..\..\config\my_dataset.yaml `
+        --weights yolov5n.pt `
+        --name yolo5n_baseline `
+        --patience 10 `
+        --save-period 5 `
+        --device cpu `
+        --workers 4 `
+        --project runs/train `
+        --exist-ok
 }
 
 # Main script execution
