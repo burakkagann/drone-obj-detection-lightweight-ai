@@ -1,58 +1,200 @@
-# Byte-compiled / cache files
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+*$py.class
+
+# C extensions
 *.so
-*.egg
-*.egg-info/
-dist/
+
+# Distribution / packaging
+.Python
 build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Jupyter Notebook checkpoints
-.ipynb_checkpoints/
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
 
-# VSCode settings
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# pytest
+.cache/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# VS Code
 .vscode/
 
-# OS-specific files
+# Mac
 .DS_Store
+
+# Windows
 Thumbs.db
 ehthumbs.db
-desktop.ini
+Desktop.ini
 
-# Training output logs and cache
+# Logs
+logs/
 *.log
-*.cache
-runs/
-*.pt
+*.out
+*.err
 
-# Ultralytics settings and model downloads
-*.onnx
-*.mlmodel
-*.torchscript
-*.engine
-*.tflite
-*.pb
-*.trt
+# Images and datasets
+*.png
+*.jpg
+*.jpeg
+*.bmp
+*.gif
+*.tif
+*.tiff
+*.ico
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+*.wav
+*.mp3
+*.flac
+*.ogg
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+*.npz
 *.npy
-*.bin
+*.h5
+*.pt
+*.pth
+*.ckpt
+*.weights
+*.onnx
+*.pb
+*.cfg
+*.xml
+*.json
+*.csv
+*.yml
+*.yaml
+*.mat
+*.pkl
+*.sav
+*.sqlite
+*.db
+*.mdb
+*.accdb
+*.xls
+*.xlsx
+*.xlsm
+*.ods
+*.pdf
+*.doc
+*.docx
+*.ppt
+*.pptx
+*.rtf
+*.txt
+*.md.bak
 
-# TensorBoard logs
-events.out.tfevents.*
+# Environment
+.env
+.venv/
+venv/
+ENV/
+env.bak/
+venv.bak/
 
-# YOLOv5 training cache
-*.cache
-*.jpg.cache
-*.png.cache
-*.labels.cache
+# OneDrive
+~$*
 
-# Dataset folders that are too large to track
-data/raw/
-data/augmented/
-data/my_dataset/visdrone/
-data/my_dataset/dota/
+# Backup files
+*~
+*.bak
+*.swp
+*.swo
+*.tmp
 
-# Backup Scripts and Files
-back-up-scripts/
+# Exclude checkpoints and weights
+checkpoints/
+weights/
 
-# Virtol Environment
-venvs/
+# Exclude data and output folders
+runs/
+data/
+output/
+
+# Exclude requirements cache
+requirements/*.bak
+requirements/*.lock
+
+# Exclude git internal objects
+.git/objects/
