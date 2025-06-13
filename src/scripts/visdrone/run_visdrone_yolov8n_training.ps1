@@ -28,8 +28,8 @@ function Train-YOLOv8 {
         imgsz=640 `
         name=yolov8n_baseline `
         patience=10 `
-        save-period=5 `
-        device=0 `
+        save_period=5 `
+        device=cpu `
         workers=4 `
         project=runs/train `
         exist_ok
