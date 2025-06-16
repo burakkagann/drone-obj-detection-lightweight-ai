@@ -1,0 +1,9 @@
+torch==2.7.0            # PyTorch version compatible with YOLOv5n and YOLOv8n
+opencv-python==4.11.0.86
+numpy==1.23.5           # Correct version for compatibility
+matplotlib==3.10.3
+pandas==2.0.1           # For data manipulation
+scikit-learn==1.0.2
+tqdm==4.67.1
+argparse
+ultralytics==8.3.0      # Latest version of the YOLO library (updated for YOLOv8)

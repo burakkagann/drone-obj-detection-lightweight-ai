@@ -1,0 +1,12 @@
+opencv-python
+opencv-contrib-python
+numpy
+matplotlib
+scipy
+seaborn
+imgaug
+albumentations
+Pillow
+torch
+ultralytics
+scikit-image

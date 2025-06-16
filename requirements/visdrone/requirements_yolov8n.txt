@@ -1,0 +1,18 @@
+# Core dependencies for YOLOv8n
+torch==2.7.0
+opencv-python==4.11.0.86
+numpy==1.23.5
+matplotlib==3.10.3
+PyYAML==6.0.2
+tqdm==4.67.1
+
+# Exporting dependencies
+pandas==2.0.1
+
+# Optional for evaluation (remove if not used)
+# scikit-learn==1.0.2
+
+# TensorFlow ecosystem (only if you need TF export or use TF)
+tensorflow==2.14.0
+keras==2.14.0
+tensorboard==2.14.0

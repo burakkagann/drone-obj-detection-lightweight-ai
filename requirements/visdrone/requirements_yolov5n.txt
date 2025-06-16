@@ -1,0 +1,11 @@
+torch==2.7.0
+opencv-python==4.11.0.86
+numpy>=1.23.5
+matplotlib==3.5.3
+PyYAML==6.0.2
+tqdm==4.67.1
+seaborn==0.12.2
+pandas==1.5.3
+scikit-learn==1.0.2  # Optional for evaluation
+requests>=2.28.1
+

@@ -1,0 +1,2 @@
+model_name,train_data,augmentation,map,fps,device
+YOLOv5n,visdrone,None,0.56,24,JetsonNano

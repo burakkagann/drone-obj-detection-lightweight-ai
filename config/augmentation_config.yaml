@@ -1,0 +1,13 @@
+fog:
+  intensity: 0.5      # 0–1, how opaque the fog appears
+  depth_blend: 0.3    # 0–1, how much fog increases with image depth (height)
+
+night:
+  gamma: 2.5          # higher = darker image
+  brightness_reduction: 0.6  # 0–1 multiplier
+  desaturate: true    # true = remove color vibrance
+
+sensor:
+  blur_ksize: 3       # odd integer (3, 5, 7) – size of motion blur
+  noise_std: 5        # 0–30 – standard deviation of Gaussian noise
+  shift_pixels: 1     # 0–3 – how many pixels to shift channels

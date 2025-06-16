@@ -47,6 +47,14 @@ This repository contains the code, configuration, and structure for the master's
     pip install -r requirements/visdrone/requirements_mobilenet-ssd.txt
     ```
 
+    For YOLOv8n:
+
+    ```bash
+    python -m venv venvs/yolov8n_env
+    .\venvs\yolov8n_env\Scripts\Activate.ps1
+    pip install -r requirements/requirements_yolov8n.txt
+    ```
+
 ### Step 2: Training Models
 
 #### **Training YOLOv5n**

@@ -1,0 +1,13 @@
+# my_dataset.yaml
+
+path: C:/Users/burak/OneDrive/Desktop/Git Repos/drone-obj-detection-lightweight-ai/data/my_dataset/visdrone
+
+train: C:/Users/burak/OneDrive/Desktop/Git Repos/drone-obj-detection-lightweight-ai/data/my_dataset/visdrone/images/train
+val:   C:/Users/burak/OneDrive/Desktop/Git Repos/drone-obj-detection-lightweight-ai/data/my_dataset/visdrone/images/val
+
+labels_train: C:/Users/burak/OneDrive/Desktop/Git Repos/drone-obj-detection-lightweight-ai/data/my_dataset/visdrone/labels/train
+labels_val:   C:/Users/burak/OneDrive/Desktop/Git Repos/drone-obj-detection-lightweight-ai/data/my_dataset/visdrone/labels/val
+
+nc: 10
+
+names: ['pedestrian', 'people', 'bicycle', 'car', 'van', 'truck', 'tricycle', 'awning-tricycle', 'bus', 'motor']
