@@ -9,6 +9,8 @@ import os
 import warnings
 from pathlib import Path
 import torch
+import yaml
+from copy import deepcopy
 
 # Add project root to path
 script_dir = Path(__file__).parent
@@ -26,9 +28,14 @@ sys.path.append(str(yolov5_dir))
 try:
     from models.yolo import Model
     from utils.dataloaders import create_dataloader
-    from utils.general import check_dataset, colorstr
-    from utils.torch_utils import select_device
+    from utils.general import check_dataset, colorstr, increment_path, one_cycle
+    from utils.torch_utils import select_device, ModelEMA
+    from utils.loss import ComputeLoss
+    from utils.plots import plot_labels, plot_evolve, plot_results
+    from utils.loggers import Loggers
+    from utils.callbacks import Callbacks
     import val as validate
+    import train as yolov5_train
 except ImportError as e:
     print(f"❌ Error importing YOLOv5 components: {e}")
     print(f"📁 Make sure YOLOv5 is properly installed in: {yolov5_dir}")
@@ -46,13 +53,23 @@ class YOLOv5TrainingEvaluator:
                  weights: str = "yolov5n.pt",
                  device: str = "0",
                  batch_size: int = 16,
-                 img_size: int = 640):
+                 img_size: int = 640,
+                 epochs: int = 100,
+                 save_period: int = 5,
+                 patience: int = 10,
+                 project: str = "runs/train",
+                 name: str = "yolov5n_visdrone"):
         
         self.data_config = data_config
         self.model_config = model_config
         self.weights = weights
         self.batch_size = batch_size
         self.img_size = img_size
+        self.epochs = epochs
+        self.save_period = save_period
+        self.patience = patience
+        self.project = project
+        self.name = name
         
         # Device setup
         self.device = select_device(device, batch_size=batch_size)
@@ -64,10 +81,15 @@ class YOLOv5TrainingEvaluator:
             device=str(self.device)
         )
         
+        # Create save directory
+        self.save_dir = increment_path(Path(project) / name, exist_ok=True)
+        self.save_dir.mkdir(parents=True, exist_ok=True)
+        
         print(f"🎯 YOLOv5 Training Evaluator Initialized")
         print(f"📊 Device: {self.device}")
         print(f"📁 Data Config: {data_config}")
         print(f"🏗️ Model: {model_config}")
+        print(f"📁 Save Directory: {self.save_dir}")
 
     def setup_model_and_data(self):
         """Setup model and data loaders"""
@@ -100,18 +122,33 @@ class YOLOv5TrainingEvaluator:
         self.model.to(self.device)
         
         # Setup data
-        data_dict = check_dataset(self.data_config)
+        self.data_dict = check_dataset(self.data_config)
         
-        # Create validation dataloader
-        self.val_loader, _ = create_dataloader(
-            data_dict['val'],
+        # Create data loaders
+        self.train_loader, self.train_dataset = create_dataloader(
+            self.data_dict['train'],
             self.img_size,
             self.batch_size,
             32,  # grid size
             single_cls=False,
-            hyp=None,
+            hyp=self.get_hyperparameters(),
+            augment=True,
+            cache=False,
+            pad=0.0,
+            rect=False,
+            workers=4,
+            prefix=colorstr('train: ')
+        )
+        
+        self.val_loader, self.val_dataset = create_dataloader(
+            self.data_dict['val'],
+            self.img_size,
+            self.batch_size,
+            32,  # grid size
+            single_cls=False,
+            hyp=self.get_hyperparameters(),
             augment=False,
-            cache=True,
+            cache=False,
             pad=0.5,
             rect=True,
             workers=4,
@@ -119,7 +156,191 @@ class YOLOv5TrainingEvaluator:
         )
         
         print(f"✅ Model and data setup complete")
-        print(f"📊 Validation samples: {len(self.val_loader.dataset)}")
+        print(f"📊 Training samples: {len(self.train_dataset)}")
+        print(f"📊 Validation samples: {len(self.val_dataset)}")
+
+    def get_hyperparameters(self):
+        """Get default hyperparameters for training"""
+        return {
+            'lr0': 0.01,
+            'lrf': 0.01,
+            'momentum': 0.937,
+            'weight_decay': 0.0005,
+            'warmup_epochs': 3.0,
+            'warmup_momentum': 0.8,
+            'warmup_bias_lr': 0.1,
+            'box': 0.05,
+            'cls': 0.5,
+            'cls_pw': 1.0,
+            'obj': 1.0,
+            'obj_pw': 1.0,
+            'iou_t': 0.20,
+            'anchor_t': 4.0,
+            'fl_gamma': 0.0,
+            'hsv_h': 0.015,
+            'hsv_s': 0.7,
+            'hsv_v': 0.4,
+            'degrees': 0.0,
+            'translate': 0.1,
+            'scale': 0.5,
+            'shear': 0.0,
+            'perspective': 0.0,
+            'flipud': 0.0,
+            'fliplr': 0.5,
+            'mosaic': 1.0,
+            'mixup': 0.0,
+            'copy_paste': 0.0
+        }
+
+    def train_with_metrics(self):
+        """Train YOLOv5 with integrated metrics collection"""
+        print(f"\n🚀 Starting training with {self.epochs} epochs...")
+        
+        # Setup training components
+        hyp = self.get_hyperparameters()
+        
+        # Attach hyperparameters to model (required for ComputeLoss)
+        self.model.hyp = hyp
+        
+        # Optimizer
+        g = [], [], []  # optimizer parameter groups
+        bn = tuple(v for k, v in torch.nn.__dict__.items() if 'Norm' in k)
+        for v in self.model.modules():
+            if hasattr(v, 'bias') and isinstance(v.bias, torch.nn.Parameter):
+                g[2].append(v.bias)
+            if isinstance(v, bn):
+                g[1].append(v.weight)
+            elif hasattr(v, 'weight') and isinstance(v.weight, torch.nn.Parameter):
+                g[0].append(v.weight)
+        
+        optimizer = torch.optim.SGD(g[2], lr=hyp['lr0'], momentum=hyp['momentum'], nesterov=True)
+        optimizer.add_param_group({'params': g[0], 'weight_decay': hyp['weight_decay']})
+        optimizer.add_param_group({'params': g[1], 'weight_decay': 0.0})
+        
+        # Scheduler
+        lf = one_cycle(1, hyp['lrf'], self.epochs)
+        scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lf)
+        
+        # Loss function
+        compute_loss = ComputeLoss(self.model)
+        
+        # EMA
+        ema = ModelEMA(self.model)
+        
+        # Training loop
+        best_fitness = 0.0
+        for epoch in range(self.epochs):
+            print(f"\n{'='*60}")
+            print(f"🏃 Epoch {epoch+1}/{self.epochs}")
+            print(f"{'='*60}")
+            
+            # Training phase
+            train_loss = self.train_epoch(epoch, optimizer, scheduler, compute_loss, ema)
+            
+            # Validation phase with metrics
+            if epoch % 5 == 0 or epoch == self.epochs - 1:
+                val_metrics = self.validate_with_metrics(epoch, ema.ema)
+                
+                # Save best model
+                fitness = val_metrics.get('metrics/mAP_0.5', 0.0)
+                if fitness > best_fitness:
+                    best_fitness = fitness
+                    torch.save({
+                        'epoch': epoch,
+                        'model': deepcopy(ema.ema).half(),
+                        'optimizer': optimizer.state_dict(),
+                        'best_fitness': best_fitness
+                    }, self.save_dir / 'best.pt')
+                    print(f"🏆 New best model saved with mAP@0.5: {fitness:.4f}")
+                
+                # Save checkpoint
+                if epoch % self.save_period == 0:
+                    torch.save({
+                        'epoch': epoch,
+                        'model': deepcopy(ema.ema).half(),
+                        'optimizer': optimizer.state_dict(),
+                        'best_fitness': best_fitness
+                    }, self.save_dir / f'epoch_{epoch}.pt')
+        
+        print(f"\n✅ Training completed! Best mAP@0.5: {best_fitness:.4f}")
+        return self.save_dir / 'best.pt'
+
+    def train_epoch(self, epoch, optimizer, scheduler, compute_loss, ema):
+        """Train one epoch"""
+        self.model.train()
+        
+        pbar = enumerate(self.train_loader)
+        print(f"🔄 Training epoch {epoch+1}")
+        
+        for i, (imgs, targets, paths, _) in pbar:
+            imgs = imgs.to(self.device, non_blocking=True).float() / 255.0
+            targets = targets.to(self.device)
+            
+            # Forward pass
+            pred = self.model(imgs)
+            loss, loss_items = compute_loss(pred, targets)
+            
+            # Backward pass
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            
+            # Update EMA
+            ema.update(self.model)
+            
+            if i % 50 == 0:
+                print(f"   Batch {i}/{len(self.train_loader)}: Loss {loss.item():.4f}")
+        
+        scheduler.step()
+        return loss.item()
+
+    def validate_with_metrics(self, epoch, model=None):
+        """Validate and collect comprehensive metrics"""
+        print(f"\n📊 Running validation with training metrics (Epoch {epoch+1})...")
+        
+        # Use EMA model if provided
+        val_model = model if model is not None else self.model
+        
+        # Run YOLOv5 validation
+        yolov5_results = validate.run(
+            data=self.data_dict,
+            weights=None,
+            batch_size=self.batch_size,
+            imgsz=self.img_size,
+            model=val_model,
+            dataloader=self.val_loader,
+            device=self.device,
+            verbose=False,
+            plots=False,
+            save_json=False
+        )
+        
+        # Extract validation metrics
+        metrics_tuple = yolov5_results[0]
+        validation_metrics = {
+            'metrics/mAP_0.5': metrics_tuple[2],
+            'metrics/mAP_0.5:0.95': metrics_tuple[3],
+            'metrics/precision': metrics_tuple[0],
+            'metrics/recall': metrics_tuple[1],
+        }
+        
+        # Print validation results
+        print(f"📊 Validation Results (Epoch {epoch+1}):")
+        print(f"   mAP@0.5: {metrics_tuple[2]:.6f}")
+        print(f"   mAP@0.5:0.95: {metrics_tuple[3]:.6f}")
+        print(f"   Precision: {metrics_tuple[0]:.6f}")
+        print(f"   Recall: {metrics_tuple[1]:.6f}")
+        
+        # Collect comprehensive training metrics
+        training_metrics = self.metrics_collector.collect_comprehensive_metrics(
+            model=val_model,
+            dataloader=self.val_loader,
+            yolov5_results=validation_metrics,
+            epoch=epoch+1,
+            model_path=str(self.save_dir / f'epoch_{epoch}.pt')
+        )
+        
+        return validation_metrics
 
     def run_validation_with_metrics(self, epoch: int = 0, model_path: str = None):
         """Run validation and collect comprehensive training metrics"""
@@ -264,27 +485,34 @@ def main():
         model_config=model_config,
         weights=weights,
         device="0",  # CUDA GPU
-        batch_size=16,
-        img_size=640
+        batch_size=8,   # Memory optimized
+        img_size=416,   # Memory optimized
+        epochs=10,      # Testing with 10 epochs
+        project="runs/train",
+        name="yolov5n_visdrone_test_10epochs"
     )
     
     # Setup model and data
     trainer.setup_model_and_data()
     
-    # Run validation with comprehensive metrics
-    print("\n📊 Phase 1: Validation with Training Metrics")
-    training_metrics = trainer.run_validation_with_metrics(epoch=0)
+    # Option 1: Full training with metrics
+    print("\n🚀 Starting full training with integrated metrics...")
+    best_model_path = trainer.train_with_metrics()
     
-    # Run inference-only benchmark
-    print("\n⚡ Phase 2: Inference Benchmarking")
-    inference_results = trainer.benchmark_inference_only(num_samples=100)
+    # Option 2: If you just want evaluation (comment out above and uncomment below)
+    # print("\n📊 Phase 1: Validation with Training Metrics")
+    # training_metrics = trainer.run_validation_with_metrics(epoch=0)
+    # 
+    # print("\n⚡ Phase 2: Inference Benchmarking")
+    # inference_results = trainer.benchmark_inference_only(num_samples=100)
     
     # Generate training documentation
-    print("\n📄 Phase 3: Documentation Generation")
+    print("\n📄 Final Documentation Generation")
     trainer.generate_training_documentation()
     
-    print("\n✅ Training metrics collection completed!")
+    print("\n✅ Training with metrics collection completed!")
     print("📊 Check results/training_metrics/ for comprehensive evaluation data")
+    print(f"🏆 Best model saved at: {best_model_path}")
 
 if __name__ == "__main__":
     # Change to YOLOv5 directory for proper imports

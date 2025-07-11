@@ -12,11 +12,11 @@ function Test-CUDAAvailability {
 $CONFIG = @{
     MODEL_NAME = "yolov5n"
     DATASET = "visdrone"
-    CONFIG_PATH = "config/visdrone/yolov5n_v1/visdrone_yolov5n.yaml"
-    MODEL_CONFIG_PATH = "config/visdrone/yolov5n_v1/model_yolov5n.yaml"
+    CONFIG_PATH = "config/visdrone/yolov5n_v1/yolov5n_visdrone_config.yaml"
+    MODEL_CONFIG_PATH = "src/models/YOLOv5/models/yolov5n.yaml"
     DATASET_PATH = "data/my_dataset/visdrone"
     BATCH_SIZE = 8  # Reduced from 16 for memory optimization
-    EPOCHS = 100  # Increased for better convergence
+    EPOCHS = 10  # Testing with 10 epochs
     IMAGE_SIZE = 416  # Reduced from 640 for memory optimization
     SAVE_PERIOD = 5
     PATIENCE = 10
@@ -132,33 +132,20 @@ function Train-YOLOv5 {
     Write-Host "Performing pre-training cache cleanup..."
     Clean-Cache
     
-    # Ensure we're in the correct directory
-    Set-Location -Path "src/models/YOLOv5"
+    # Ensure we're in the correct directory for our custom training script
+    Set-Location -Path "src/scripts/visdrone"
     
     # Set environment variables to limit memory usage
     if ($CONFIG.DEVICE -eq "cuda") {
         $env:PYTORCH_CUDA_ALLOC_CONF = "max_split_size_mb:512"
     }
     
-    # Build the command as a string first
-    $trainCmd = "python train.py " + `
-        "--img $($CONFIG.IMAGE_SIZE) " + `
-        "--batch $($CONFIG.BATCH_SIZE) " + `
-        "--epochs $($CONFIG.EPOCHS) " + `
-        "--data '../../../$($CONFIG.CONFIG_PATH)' " + `
-        "--cfg '../../../$($CONFIG.MODEL_CONFIG_PATH)' " + `
-        "--weights '$($CONFIG.MODEL_NAME).pt' " + `
-        "--name '$($CONFIG.MODEL_NAME)_$($CONFIG.DATASET)' " + `
-        "--patience $($CONFIG.PATIENCE) " + `
-        "--save-period $($CONFIG.SAVE_PERIOD) " + `
-        "--device 0 " + `  # Explicitly use first GPU
-        "--workers $($CONFIG.WORKERS) " + `
-        "--project '../../../runs/train' " + `
-        "--exist-ok " + `
-        "--cache False"
+    # Use our custom training script with integrated metrics
+    Write-Host "Starting YOLOv5n training with integrated evaluation metrics..."
+    Write-Host "Training will include comprehensive metrics collection every 5 epochs"
     
-    # Execute the command
-    Invoke-Expression $trainCmd
+    # Execute the custom training script
+    python train_yolov5n_with_evaluation_metrics.py
         
     # Return to original directory
     Set-Location -Path "../../.."
