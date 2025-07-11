@@ -16,26 +16,35 @@ function Start-Venv {
 # Step 3: Function to clean up cache files
 function Clean-Cache {
     Write-Host "Cleaning up cache files..."
-    Remove-Item -Recurse -Force "..\data\my_dataset\visdrone\labels\train.cache" -ErrorAction SilentlyContinue
-    Remove-Item -Recurse -Force "..\data\my_dataset\visdrone\labels\train.cache.npy" -ErrorAction SilentlyContinue
+    Remove-Item -Recurse -Force "data\my_dataset\visdrone\labels\train.cache" -ErrorAction SilentlyContinue
+    Remove-Item -Recurse -Force "data\my_dataset\visdrone\labels\train.cache.npy" -ErrorAction SilentlyContinue
 }
 
 # Step 4: Function to train YOLOv5
 function Train-YOLOv5 {
-    Write-Host "Starting YOLOv5n training..."
-    python ..\..\..\src\models\YOLOv5\train.py `
+    Write-Host "Starting YOLOv5n training with CUDA (RTX 3060 6GB optimized)..."
+    
+    # Change to the YOLOv5 directory
+    Set-Location -Path "src\models\YOLOv5"
+    
+    # Run training optimized for RTX 3060 6GB VRAM
+    python train.py `
         --img 640 `
         --batch 16 `
         --epochs 50 `
-        --data ..\..\..\config\my_dataset.yaml `
+        --data ..\..\..\config\visdrone\yolov5n_v1\yolov5n_visdrone_config.yaml `
         --weights yolov5n.pt `
-        --name yolo5n_baseline `
+        --name yolo5n_visdrone_cuda `
         --patience 10 `
         --save-period 5 `
-        --device cpu `
+        --device 0 `
         --workers 4 `
-        --project runs/train `
-        --exist-ok
+        --project ..\..\..\runs\train `
+        --exist-ok `
+        --cache
+    
+    # Return to the original directory
+    Set-Location -Path "..\..\.."
 }
 
 # Main script execution
