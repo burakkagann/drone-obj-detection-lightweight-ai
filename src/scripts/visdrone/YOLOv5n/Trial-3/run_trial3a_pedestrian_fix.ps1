@@ -1,17 +1,18 @@
-# YOLOv5n Trial-2 Hyperparameter Optimization Training Script
-# Optimized for VisDrone dataset with research-backed settings
+# YOLOv5n Trial-3A: Pedestrian Detection Fix Training Script
+# Focus: Address class imbalance and pedestrian detection failure
 # 
 # Key Optimizations Applied:
-# 1. Enabled mosaic and mixup augmentation (critical for performance)
-# 2. Increased image resolution from 416 to 640 pixels
-# 3. Reduced learning rate for small object detection
-# 4. Increased batch size for stable gradients
-# 5. Optimized loss function weights for small objects
+# 1. Focal Loss implementation for class imbalance (alpha=0.25, gamma=2.0)
+# 2. Class-specific loss weights (pedestrian=5.0, people=1.0)
+# 3. Pedestrian-specific augmentation and oversampling (factor=3.0)
+# 4. Anchor optimization for small objects
+# 5. Enhanced data loading for balanced training
 #
 # Expected Improvements:
-# - Baseline: 17.80% mAP@0.5
-# - Target: 22-25% mAP@0.5 (+3-5% improvement)
-# - Success threshold: >18.8% mAP@0.5 (+1% minimum)
+# - Baseline: 22.6% mAP@0.5 (Trial-2 result)
+# - Target: 23-25% mAP@0.5 (+0.4-2.4% improvement)
+# - Pedestrian mAP@0.5: >10% (vs current 1.25%)
+# - Pedestrian Recall: >15% (vs current 0%)
 
 param(
     [int]$Epochs = 100,
@@ -36,11 +37,11 @@ function Write-Info { Write-ColorOutput Cyan $args }
 
 # Help function
 function Show-Help {
-    Write-Host "YOLOv5n Trial-2 Hyperparameter Optimization Training" -ForegroundColor Green
-    Write-Host "====================================================" -ForegroundColor Green
+    Write-Host "YOLOv5n Trial-3A: Pedestrian Detection Fix Training" -ForegroundColor Green
+    Write-Host "=====================================================" -ForegroundColor Green
     Write-Host ""
     Write-Host "USAGE:" -ForegroundColor Yellow
-    Write-Host "  .\run_trial2_hyperopt.ps1 [OPTIONS]"
+    Write-Host "  .\run_trial3a_pedestrian_fix.ps1 [OPTIONS]"
     Write-Host ""
     Write-Host "OPTIONS:" -ForegroundColor Yellow
     Write-Host "  -Epochs <number>     Number of training epochs (default: 100)"
@@ -48,22 +49,29 @@ function Show-Help {
     Write-Host "  -Help               Show this help message"
     Write-Host ""
     Write-Host "EXAMPLES:" -ForegroundColor Yellow
-    Write-Host "  .\run_trial2_hyperopt.ps1 -QuickTest"
-    Write-Host "  .\run_trial2_hyperopt.ps1 -Epochs 100"
+    Write-Host "  .\run_trial3a_pedestrian_fix.ps1 -QuickTest"
+    Write-Host "  .\run_trial3a_pedestrian_fix.ps1 -Epochs 100"
+    Write-Host ""
+    Write-Host "CRITICAL ISSUES ADDRESSED:" -ForegroundColor Cyan
+    Write-Host "  [FIX] Pedestrian detection failure (1.25% mAP@0.5)"
+    Write-Host "  [FIX] Zero pedestrian recall (0%)"
+    Write-Host "  [FIX] Class imbalance (96.5% people vs 3.5% pedestrian)"
+    Write-Host "  [FIX] Poor small object detection"
     Write-Host ""
     Write-Host "OPTIMIZATIONS APPLIED:" -ForegroundColor Cyan
-    Write-Host "  [CHECK] Enabled mosaic augmentation (0.0 → 0.8)"
-    Write-Host "  [CHECK] Enabled mixup augmentation (0.0 → 0.4)"
-    Write-Host "  [CHECK] Increased image resolution (416 → 640)"
-    Write-Host "  [CHECK] Reduced learning rate (0.01 → 0.005)"
-    Write-Host "  [CHECK] Increased batch size (8 → 16)"
-    Write-Host "  [CHECK] Extended warmup epochs (3.0 → 5.0)"
-    Write-Host "  [CHECK] Optimized loss function weights"
+    Write-Host "  [NEW] Focal Loss implementation (alpha=0.25, gamma=2.0)"
+    Write-Host "  [NEW] Class-specific loss weights (pedestrian=5.0, people=1.0)"
+    Write-Host "  [NEW] Pedestrian-specific augmentation (factor=3.0)"
+    Write-Host "  [NEW] Anchor optimization for small objects"
+    Write-Host "  [NEW] Enhanced data loading for balanced training"
+    Write-Host "  [NEW] Pedestrian oversampling strategy"
     Write-Host ""
     Write-Host "EXPECTED RESULTS:" -ForegroundColor Cyan
-    Write-Host "  Baseline mAP@0.5: 17.80%"
-    Write-Host "  Target mAP@0.5: 22-25% (+3-5% improvement)"
-    Write-Host "  Success threshold: >18.8% mAP@0.5 (+1% minimum)"
+    Write-Host "  Baseline mAP@0.5: 22.6% (Trial-2 result)"
+    Write-Host "  Target mAP@0.5: 23-25% (+0.4-2.4% improvement)"
+    Write-Host "  Pedestrian mAP@0.5: >10% (vs current 1.25%)"
+    Write-Host "  Pedestrian Recall: >15% (vs current 0%)"
+    Write-Host "  Success threshold: >23% mAP@0.5 (+0.4% minimum)"
     exit 0
 }
 
@@ -74,18 +82,20 @@ if ($Help) {
 
 # Header
 Write-Host "================================================================" -ForegroundColor Green
-Write-Host "YOLOv5n Trial-2 Hyperparameter Optimization Training" -ForegroundColor Green
+Write-Host "YOLOv5n Trial-3A: Pedestrian Detection Fix Training" -ForegroundColor Green
 Write-Host "================================================================" -ForegroundColor Green
 Write-Host ""
 
 # Configuration
-Write-Info "[CONFIG] Training Configuration:"
+Write-Info "[CONFIG] Trial 3A Configuration:"
 Write-Host "  • Epochs: $Epochs"
 Write-Host "  • Quick Test: $QuickTest"
 Write-Host "  • Batch Size: 16 (optimized)"
 Write-Host "  • Image Size: 640 (optimized)"
 Write-Host "  • Learning Rate: 0.005 (optimized)"
-Write-Host "  • Augmentation: Mosaic + Mixup enabled"
+Write-Host "  • Focal Loss: Enabled (alpha=0.25, gamma=2.0)"
+Write-Host "  • Class Weights: [people=1.0, pedestrian=5.0]"
+Write-Host "  • Pedestrian Augmentation: Factor 3.0"
 Write-Host ""
 
 # Check if quick test is enabled
@@ -119,15 +129,6 @@ try {
     Write-Warning "[GPU] nvidia-smi not found, will use CPU"
 }
 
-# Check if hyperparameter file exists
-$hypFile = "..\..\..\..\..\config\visdrone\yolov5n_v1\hyp_visdrone_trial-2_optimized.yaml"
-if (Test-Path $hypFile) {
-    Write-Success "[CONFIG] Hyperparameter file found"
-} else {
-    Write-Error "[ERROR] Hyperparameter file not found: $hypFile"
-    exit 1
-}
-
 # Check if dataset config exists
 $dataFile = "..\..\..\..\..\config\visdrone\yolov5n_v1\yolov5n_visdrone_config.yaml"
 if (Test-Path $dataFile) {
@@ -140,12 +141,12 @@ if (Test-Path $dataFile) {
 Write-Host ""
 
 # Training execution
-Write-Info "[TRAINING] Starting Trial-2 hyperparameter optimization..."
+Write-Info "[TRAINING] Starting Trial-3A Pedestrian Detection Fix..."
 Write-Host ""
 
 # Prepare arguments
 $pythonArgs = @(
-    "train_yolov5n_trial2_hyperopt.py",
+    "train_yolov5n_trial3a_pedestrian_fix.py",
     "--epochs", $Epochs.ToString()
 )
 
@@ -162,23 +163,25 @@ try {
     
     if ($process.ExitCode -eq 0) {
         Write-Host ""
-        Write-Success "[SUCCESS] Trial-2 training completed successfully!"
+        Write-Success "[SUCCESS] Trial-3A training completed successfully!"
         Write-Host ""
         
         # Show expected results reminder
         Write-Info "[RESULTS] Expected Performance Targets:"
-        Write-Host "  • Minimum: >18.8% mAP@0.5 (+1% improvement)"
-        Write-Host "  • Target: >21% mAP@0.5 (+3% improvement)"
-        Write-Host "  • Excellent: >23% mAP@0.5 (+5% improvement)"
+        Write-Host "  • Minimum: >23% mAP@0.5 (+0.4% improvement)"
+        Write-Host "  • Target: >24% mAP@0.5 (+1.4% improvement)"
+        Write-Host "  • Excellent: >25% mAP@0.5 (+2.4% improvement)"
+        Write-Host "  • Pedestrian mAP@0.5: >10% (vs current 1.25%)"
+        Write-Host "  • Pedestrian Recall: >15% (vs current 0%)"
         Write-Host ""
         
         # Show next steps
         Write-Info "[NEXT STEPS] Recommendations:"
         Write-Host "  • Check training logs for final mAP@0.5 results"
-        Write-Host "  • Compare against baseline (17.80% mAP@0.5)"
-        Write-Host "  • If improvement >3%, proceed to full 100-epoch training"
-        Write-Host "  • If improvement 1-3%, consider Phase 2 optimizations"
-        Write-Host "  • If improvement <1%, debug and try alternative approaches"
+        Write-Host "  • Compare pedestrian detection performance"
+        Write-Host "  • If improvement >1.4%, proceed to Trial 3B (Recall Optimization)"
+        Write-Host "  • If improvement 0.4-1.4%, refine focal loss parameters"
+        Write-Host "  • If improvement <0.4%, investigate data quality issues"
         Write-Host ""
         
     } else {
@@ -192,5 +195,5 @@ try {
 }
 
 Write-Host "================================================================" -ForegroundColor Green
-Write-Host "Trial-2 Hyperparameter Optimization Complete" -ForegroundColor Green
+Write-Host "Trial-3A Pedestrian Detection Fix Complete" -ForegroundColor Green
 Write-Host "================================================================" -ForegroundColor Green 

@@ -45,7 +45,7 @@ logging.basicConfig(
 def setup_paths():
     """Set up project paths"""
     script_dir = Path(__file__).parent
-    project_root = script_dir.parent.parent.parent.parent
+    project_root = script_dir.parent.parent.parent.parent.parent  # Go up 5 levels
     yolov5_path = project_root / "src" / "models" / "YOLOv5"
     
     return {
@@ -76,7 +76,7 @@ def validate_environment(paths):
         logging.error(f"Dataset config not found: {dataset_config}")
         return False
     
-    logging.info("✅ Environment validation passed")
+    logging.info("[SUCCESS] Environment validation passed")
     return True
 
 def check_gpu_availability():
@@ -84,13 +84,13 @@ def check_gpu_availability():
     try:
         result = subprocess.run(['nvidia-smi'], capture_output=True, text=True)
         if result.returncode == 0:
-            logging.info("✅ GPU detected and available")
+            logging.info("[SUCCESS] GPU detected and available")
             return "0"
         else:
-            logging.warning("⚠️ GPU not detected, using CPU")
+            logging.warning("[WARNING] GPU not detected, using CPU")
             return "cpu"
     except FileNotFoundError:
-        logging.warning("⚠️ nvidia-smi not found, using CPU")
+        logging.warning("[WARNING] nvidia-smi not found, using CPU")
         return "cpu"
 
 def create_training_config(paths, epochs, quick_test=False):
@@ -133,12 +133,12 @@ def create_training_config(paths, epochs, quick_test=False):
     with open(config_file, 'w') as f:
         json.dump(config, f, indent=2)
     
-    logging.info(f"📝 Training configuration saved to: {config_file}")
+    logging.info(f"[INFO] Training configuration saved to: {config_file}")
     return config
 
 def run_training(paths, config):
     """Run YOLOv5n training with optimized hyperparameters"""
-    logging.info("🚀 Starting YOLOv5n Trial-2 Hyperparameter Optimization Training")
+    logging.info("[START] Starting YOLOv5n Trial-2 Hyperparameter Optimization Training")
     
     # Change to YOLOv5 directory
     original_dir = os.getcwd()
@@ -177,16 +177,16 @@ def run_training(paths, config):
         
         # Add quick test flag if specified
         if config['training_params']['quick_test']:
-            logging.info("🔍 Running quick validation test (20 epochs)")
+            logging.info("[QUICK] Running quick validation test (20 epochs)")
         else:
-            logging.info(f"📚 Running full training ({config['training_params']['epochs']} epochs)")
+            logging.info(f"[FULL] Running full training ({config['training_params']['epochs']} epochs)")
         
         # Log training command
         logging.info(f"Training command: {' '.join(train_args)}")
         
         # Start training
         start_time = time.time()
-        logging.info("⏱️ Training started...")
+        logging.info("[START] Training started...")
         
         # Run training process
         process = subprocess.Popen(
@@ -208,14 +208,14 @@ def run_training(paths, config):
         # Check if training was successful
         if process.returncode == 0:
             training_time = end_time - start_time
-            logging.info(f"✅ Training completed successfully in {training_time:.2f} seconds")
+            logging.info(f"[SUCCESS] Training completed successfully in {training_time:.2f} seconds")
             return True
         else:
-            logging.error(f"❌ Training failed with return code: {process.returncode}")
+            logging.error(f"[ERROR] Training failed with return code: {process.returncode}")
             return False
             
     except Exception as e:
-        logging.error(f"❌ Training error: {str(e)}")
+        logging.error(f"[ERROR] Training error: {str(e)}")
         return False
     finally:
         # Return to original directory
@@ -223,7 +223,7 @@ def run_training(paths, config):
 
 def analyze_results(paths, config):
     """Analyze training results"""
-    logging.info("📊 Analyzing training results...")
+    logging.info("[ANALYSIS] Analyzing training results...")
     
     # Look for the latest training results
     runs_dir = paths['project_root'] / "runs" / "train"
@@ -238,12 +238,12 @@ def analyze_results(paths, config):
         return
     
     latest_run = max(run_dirs, key=lambda x: x.stat().st_mtime)
-    logging.info(f"📁 Latest run directory: {latest_run}")
+    logging.info(f"[DIR] Latest run directory: {latest_run}")
     
     # Check for results.txt
     results_file = latest_run / "results.txt"
     if results_file.exists():
-        logging.info("📈 Training results found")
+        logging.info("[RESULTS] Training results found")
         
         # Read and analyze results
         try:
@@ -264,7 +264,7 @@ def analyze_results(paths, config):
                     baseline_map_50 = config['baseline_performance']['map_50']
                     improvement = final_map_50 - baseline_map_50
                     
-                    logging.info(f"🎯 RESULTS ANALYSIS:")
+                    logging.info(f"[ANALYSIS] RESULTS ANALYSIS:")
                     logging.info(f"   Baseline mAP@0.5: {baseline_map_50:.2f}%")
                     logging.info(f"   Trial-2 mAP@0.5: {final_map_50:.2f}%")
                     logging.info(f"   Improvement: {improvement:+.2f}%")
@@ -272,27 +272,27 @@ def analyze_results(paths, config):
                     # Evaluate success
                     targets = config['target_performance']
                     if final_map_50 >= targets['map_50_excellent']:
-                        logging.info("🎉 EXCELLENT PERFORMANCE ACHIEVED!")
+                        logging.info("[EXCELLENT] EXCELLENT PERFORMANCE ACHIEVED!")
                     elif final_map_50 >= targets['map_50_target']:
-                        logging.info("✅ TARGET PERFORMANCE ACHIEVED!")
+                        logging.info("[SUCCESS] TARGET PERFORMANCE ACHIEVED!")
                     elif final_map_50 >= targets['map_50_min']:
-                        logging.info("✅ MINIMUM IMPROVEMENT ACHIEVED!")
+                        logging.info("[SUCCESS] MINIMUM IMPROVEMENT ACHIEVED!")
                     else:
-                        logging.warning("⚠️ Performance below minimum threshold")
+                        logging.warning("[WARNING] Performance below minimum threshold")
                     
                     # Recommendations
                     if improvement > 3:
-                        logging.info("💡 RECOMMENDATION: Proceed to full 100-epoch training")
+                        logging.info("[RECOMMEND] Proceed to full 100-epoch training")
                     elif improvement > 1:
-                        logging.info("💡 RECOMMENDATION: Consider Phase 2 optimizations")
+                        logging.info("[RECOMMEND] Consider Phase 2 optimizations")
                     else:
-                        logging.info("💡 RECOMMENDATION: Debug and try alternative approaches")
+                        logging.info("[RECOMMEND] Debug and try alternative approaches")
                         
         except Exception as e:
             logging.error(f"Error analyzing results: {str(e)}")
     
     else:
-        logging.warning("⚠️ results.txt not found in training directory")
+        logging.warning("[WARNING] results.txt not found in training directory")
 
 def main():
     """Main training function"""
@@ -310,7 +310,7 @@ def main():
     
     # Validate environment
     if not validate_environment(paths):
-        logging.error("❌ Environment validation failed")
+        logging.error("[ERROR] Environment validation failed")
         sys.exit(1)
     
     # Create training configuration
@@ -322,10 +322,10 @@ def main():
     if success:
         # Analyze results
         analyze_results(paths, config)
-        logging.info("🎉 Trial-2 training completed successfully!")
+        logging.info("[SUCCESS] Trial-2 training completed successfully!")
         sys.exit(0)
     else:
-        logging.error("❌ Trial-2 training failed")
+        logging.error("[ERROR] Trial-2 training failed")
         sys.exit(1)
 
 if __name__ == "__main__":
