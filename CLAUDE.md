@@ -268,6 +268,19 @@ import warnings
 warnings.filterwarnings("ignore", message=".*torch.cuda.amp.autocast.*", category=FutureWarning)
 ```
 
+#### Professional Logging Standards:
+**CRITICAL: NO EMOJIS IN ANY CODE OR SCRIPTS**
+- **Reason**: Windows terminal encoding cannot handle Unicode emojis properly
+- **Use instead**: Professional text tags like [SUCCESS], [ERROR], [INFO], [WARNING]
+- **Example**: 
+  ```python
+  # WRONG (causes encoding errors):
+  logging.info("🚀 Training started...")
+  
+  # CORRECT (professional and compatible):
+  logging.info("[START] Training started...")
+  ```
+
 ## Key Files and Configurations
 
 ### Critical Configuration Files

@@ -74,7 +74,7 @@ Write-Host ""
 Write-Info "[CONFIG] Trial-4 Configuration:"
 Write-Host "  • Training Type: $TrainingType"
 Write-Host "  • Epochs: $Epochs"
-Write-Host "  • Batch Size: 18 (modest increase from Trial-2's 16)"
+Write-Host "  • Batch Size: 12 (reduced from 16 to fix GPU memory issues)"
 Write-Host "  • Image Size: 640 (same as Trial-2)"
 Write-Host "  • Object Loss: 1.25 (slight increase from Trial-2's 1.2)"
 Write-Host "  • Focal Loss: DISABLED (critical lesson from Trial-3)"
@@ -142,28 +142,22 @@ if (Test-Path $yolov5Path) {
     
     try {
         # Prepare training command
-        # Use relative paths like working Trial-3 script
-        $command = @(
-            "train.py",
-            "--data", "..\..\..\config\visdrone\yolov5n_v1\yolov5n_visdrone_config.yaml",
-            "--cfg", "models\yolov5n.yaml",
-            "--hyp", "..\..\..\config\visdrone\yolov5n_v1\hyp_visdrone_trial4.yaml",
-            "--epochs", $Epochs.ToString(),
-            "--batch-size", "18",
-            "--img-size", "640",
-            "--device", "0",
-            "--workers", "4",
-            "--name", $RunName,
-            "--save-period", "5",
-            "--patience", "15",
-            "--project", "..\..\..\runs\train",
-            "--exist-ok"
-        )
+        # Use robust Python wrapper (Trial-2 proven architecture)
+        $pythonScript = "`"C:\Users\burak\OneDrive\Desktop\Git Repos\drone-obj-detection-lightweight-ai\src\scripts\visdrone\YOLOv5n\Trial-4\train_yolov5n_trial4.py`""
+        $pythonArgs = @($pythonScript)
         
-        Write-Host "Executing: python $($command -join ' ')" -ForegroundColor Cyan
+        # Add epoch parameter
+        $pythonArgs += "--epochs", $Epochs.ToString()
+        
+        # Add quick test flag if validation mode
+        if (-not $FullTraining) {
+            $pythonArgs += "--quick-test"
+        }
+        
+        Write-Host "Executing: python $($pythonArgs -join ' ')" -ForegroundColor Cyan
         Write-Host ""
         
-        $process = Start-Process -FilePath "python" -ArgumentList $command -NoNewWindow -PassThru -Wait
+        $process = Start-Process -FilePath "python" -ArgumentList $pythonArgs -NoNewWindow -PassThru -Wait
         
         if ($process.ExitCode -eq 0) {
             Write-Host ""
