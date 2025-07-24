@@ -1,18 +1,35 @@
-# Core dependencies for YOLOv8n
-torch==2.7.0
-opencv-python==4.11.0.86
-numpy==1.23.5
-matplotlib==3.10.3
-PyYAML==6.0.2
-tqdm==4.67.1
+# CORRECTED YOLOv8n Requirements File
+# Main YOLOv8 dependency (WAS MISSING!)
+ultralytics==8.0.196
 
-# Exporting dependencies
-pandas==2.0.1
+# Core PyTorch dependencies (CORRECTED VERSIONS)
+torch==2.0.1+cu118
+torchvision==0.15.2+cu118  
+torchaudio==2.0.2+cu118
 
-# Optional for evaluation (remove if not used)
-# scikit-learn==1.0.2
+# Core dependencies for YOLOv8n (CORRECTED VERSIONS)
+opencv-python==4.8.1.78  # Was 4.11.0.86 (too new)
+numpy==1.24.3             # Was 1.23.5 (compatibility)
+matplotlib==3.7.2         # Was 3.10.3 (too new)
+PyYAML==6.0.1             # Was 6.0.2 (potential issues)
+tqdm==4.66.1              # Was 4.67.1 (very recent)
 
-# TensorFlow ecosystem (only if you need TF export or use TF)
-tensorflow==2.14.0
-keras==2.14.0
-tensorboard==2.14.0
+# Image processing (WAS MISSING!)
+Pillow==10.0.1
+
+# Scientific computing (WAS MISSING!)
+scipy==1.11.3
+
+# Data analysis dependencies
+pandas==2.0.3             # Was 2.0.1 (updated)
+
+# Visualization (ADDED FOR ANALYSIS)
+seaborn==0.12.2
+
+# Optional for evaluation
+# scikit-learn==1.3.0     # Updated version if needed
+
+# REMOVED: TensorFlow ecosystem (not needed for YOLOv8)
+# tensorflow==2.14.0      # REMOVED
+# keras==2.14.0           # REMOVED  
+# tensorboard==2.14.0     # REMOVED
