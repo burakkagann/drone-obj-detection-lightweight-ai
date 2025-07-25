@@ -157,7 +157,8 @@ if (Test-Path $yolov5Path) {
     try {
         # Prepare training command
         # Use robust Python wrapper (proven architecture)
-        $pythonScript = "`"C:\Users\burak\OneDrive\Desktop\Git Repos\drone-obj-detection-lightweight-ai\src\scripts\visdrone\YOLOv5n\Baseline\train_true_baseline_yolov5n.py`""
+        $currentDir = $PSScriptRoot
+        $pythonScript = Join-Path $currentDir "train_true_baseline_yolov5n.py"
         $pythonArgs = @($pythonScript)
         
         # Add epoch parameter

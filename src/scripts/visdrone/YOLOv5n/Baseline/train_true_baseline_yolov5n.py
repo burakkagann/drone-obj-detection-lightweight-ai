@@ -4,11 +4,17 @@ YOLOv5n TRUE BASELINE Training Script (Raw Performance)
 Thesis: "Robust Object Detection for Surveillance Drones in Low-Visibility Environments"
 
 Purpose: Establish TRUE baseline using YOLOv5n default hyperparameters
-Dataset: Original VisDrone (7,019 images) with YOLOv5 DEFAULT augmentation settings
+Dataset: Original VisDrone (7,019 images) with NO augmentation
 Expected Performance: 15-18% mAP@0.5 (unoptimized raw performance)
 
 This script demonstrates RAW YOLOv5n capability before any optimization,
 providing the foundation for measuring optimization improvements.
+
+METHODOLOGY COMPLIANCE:
+1. Uses YOLOv5n true defaults (416px, batch=8)
+2. Disables ALL augmentations for pure dataset performance
+3. Provides comprehensive evaluation metrics
+4. Enables direct comparison with YOLOv8n baseline
 
 Usage:
     python train_true_baseline_yolov5n.py [--epochs EPOCHS] [--quick-test]
@@ -232,7 +238,7 @@ def create_training_config(paths, epochs, quick_test=False):
             'phase': 'True Baseline - Raw Performance',
             'purpose': 'Establish unoptimized YOLOv5n performance baseline',
             'dataset_type': 'original',
-            'augmentation_strategy': 'yolov5_defaults_minimal',
+            'augmentation_strategy': 'none',  # CRITICAL: No augmentation for true baseline
             'optimization_level': 'none'
         },
         'performance_context': {
@@ -243,22 +249,38 @@ def create_training_config(paths, epochs, quick_test=False):
         },
         'training_params': {
             'epochs': epochs,
-            'batch_size': 8,                # YOLOv5 default (smaller than optimized)
-            'img_size': 416,                # YOLOv5 default (lower than optimized)
-            'lr0': 0.01,                    # YOLOv5 default (higher than optimized)
+            'batch_size': 8,                # YOLOv5n TRUE default (do not change)
+            'img_size': 416,                # YOLOv5n TRUE default (do not change)
+            'lr0': 0.01,                    # YOLOv5n default learning rate
             'device': check_gpu_availability(),
             'quick_test': quick_test,
             'weights': 'yolov5n.pt',        # Pre-trained weights
-            'multi_scale': False,           # DEFAULT: disabled (vs optimized: enabled)
-            'cos_lr': False,                # DEFAULT: disabled (vs optimized: enabled)
-            'cache': False                  # DEFAULT: disabled (vs optimized: enabled)
+            # AUGMENTATION CONTROLS - All disabled for true baseline
+            'augment': False,               # Master switch for augmentation
+            'hsv_h': 0.0,                   # Disable HSV-Hue augmentation
+            'hsv_s': 0.0,                   # Disable HSV-Saturation augmentation
+            'hsv_v': 0.0,                   # Disable HSV-Value augmentation
+            'degrees': 0.0,                 # Disable rotation
+            'translate': 0.0,               # Disable translation
+            'scale': 0.0,                   # Disable scaling
+            'shear': 0.0,                   # Disable shear
+            'perspective': 0.0,             # Disable perspective
+            'flipud': 0.0,                  # Disable vertical flip
+            'fliplr': 0.0,                  # Disable horizontal flip
+            'mosaic': 0.0,                  # CRITICAL: Disable mosaic
+            'mixup': 0.0,                   # CRITICAL: Disable mixup
+            'copy_paste': 0.0,              # Disable copy-paste
+            # TRAINING CONTROLS
+            'multi_scale': False,           # DEFAULT: disabled
+            'cos_lr': False,                # DEFAULT: disabled
+            'cache': False                  # DEFAULT: disabled
         },
         'hyperparameter_comparison': {
             'vs_optimized_baseline': {
                 'batch_size': '8 vs 16',
                 'img_size': '416 vs 640',
                 'lr0': '0.01 vs 0.005',
-                'mosaic': '1.0 vs 0.8',
+                'mosaic': '0.0 vs 0.8',
                 'mixup': '0.0 vs 0.4',
                 'multi_scale': 'False vs True',
                 'cos_lr': 'False vs True',
@@ -270,10 +292,10 @@ def create_training_config(paths, epochs, quick_test=False):
         },
         'scientific_value': [
             'Establishes raw YOLOv5n capability',
-            'Measures optimization impact quantitatively',
-            'Provides complete baseline context',
-            'Demonstrates improvement potential',
-            'Enables fair comparison with literature'
+            'Uses TRUE YOLOv5n defaults (416px, batch=8)',
+            'Disables ALL augmentations for pure performance',
+            'Enables direct comparison with YOLOv8n baseline',
+            'Provides foundation for measuring improvements'
         ]
     }
     
@@ -290,6 +312,13 @@ def run_true_baseline_training(paths, config):
     logging.info("[START] Starting YOLOv5n TRUE BASELINE Training (Raw Performance)")
     logging.info(f"[EXPECTED] Expected Performance: {config['performance_context']['true_baseline_expected']}")
     logging.info(f"[PURPOSE] Purpose: {config['experiment']['purpose']}")
+    
+    logging.info("[BASELINE] TRUE BASELINE CONFIGURATION:")
+    logging.info("  - Using YOLOv5n TRUE defaults (416px, batch=8)")
+    logging.info("  - NO synthetic augmentation (fog, night, blur)")
+    logging.info("  - NO standard augmentation (mosaic, mixup, HSV, geometric)")
+    logging.info("  - Pure original dataset performance")
+    logging.info("  - Enables direct comparison with YOLOv8n baseline")
     
     # Clear GPU cache before training to prevent memory issues
     try:
@@ -405,128 +434,57 @@ def run_true_baseline_training(paths, config):
         os.chdir(original_dir)
 
 def analyze_true_baseline_results(paths, config):
-    """Comprehensive analysis of TRUE baseline results"""
-    logging.info("[ANALYSIS] Analyzing TRUE BASELINE results...")
+    """Comprehensive analysis of true baseline results"""
+    logging.info("[ANALYSIS] Running comprehensive baseline analysis...")
     
-    # Find the latest true baseline training results
-    runs_dir = paths['project_root'] / "runs" / "train"
-    if not runs_dir.exists():
-        logging.error("[ERROR] No training results found")
-        return
-    
-    # Find the latest true baseline run
-    run_dirs = [d for d in runs_dir.iterdir() if d.is_dir() and "yolov5n_true_baseline" in d.name]
-    if not run_dirs:
-        logging.error("[ERROR] No true baseline results found")
-        return
-    
-    latest_run = max(run_dirs, key=lambda x: x.stat().st_mtime)
-    logging.info(f"[RESULTS] Latest true baseline run directory: {latest_run}")
-    
-    # Analyze results.csv if available
-    results_csv = latest_run / "results.csv"
-    if results_csv.exists():
-        logging.info("[ANALYSIS] Analyzing true baseline results.csv...")
+    try:
+        # Import evaluation module
+        sys.path.append(str(paths['project_root'] / 'src' / 'evaluation'))
+        from thesis_metrics import YOLOEvaluationMetrics
         
-        try:
-            import pandas as pd
-            df = pd.read_csv(results_csv)
-            
-            # Get final epoch results
-            final_row = df.iloc[-1]
-            final_map_50 = final_row['metrics/mAP_0.5'] * 100  # Convert to percentage
-            final_map_50_95 = final_row['metrics/mAP_0.5:0.95'] * 100
-            final_precision = final_row['metrics/precision'] * 100
-            final_recall = final_row['metrics/recall'] * 100
-            
-            # Compare with expectations
-            expected_range = config['performance_context']['true_baseline_expected']
-            optimization_potential = config['performance_context']['optimization_potential']
-            
-            logging.info("[RESULTS] TRUE BASELINE RESULTS ANALYSIS:")
-            logging.info("="*60)
-            logging.info(f"[METRICS] Final mAP@0.5: {final_map_50:.3f}%")
-            logging.info(f"[METRICS] Final mAP@0.5:0.95: {final_map_50_95:.3f}%")
-            logging.info(f"[METRICS] Final Precision: {final_precision:.3f}%")
-            logging.info(f"[METRICS] Final Recall: {final_recall:.3f}%")
-            logging.info("")
-            logging.info("[BASELINE] TRUE BASELINE PERFORMANCE CONTEXT:")
-            logging.info(f"   Expected Range: {expected_range}")
-            logging.info(f"   Achieved Performance: {final_map_50:.3f}% mAP@0.5")
-            logging.info(f"   Optimization Potential: {optimization_potential}")
-            logging.info("")
-            
-            # Evaluate baseline success
-            if 15.0 <= final_map_50 <= 18.0:
-                logging.info("[SUCCESS] EXCELLENT! Performance within expected true baseline range!")
-                logging.info("[ANALYSIS] This establishes a clear baseline for optimization impact measurement")
-            elif final_map_50 < 15.0:
-                logging.warning("[WARNING] Performance below expected true baseline range")
-                logging.info("[ANALYSIS] May indicate training issues or dataset challenges")
-            elif final_map_50 > 18.0:
-                logging.info("[HIGHER] Performance above expected true baseline range")
-                logging.info("[ANALYSIS] YOLOv5n defaults perform better than expected on VisDrone")
-            
-            # Calculate optimization potential
-            if final_map_50 > 0:
-                # Assume optimized baseline will achieve ~23-25%
-                estimated_optimized = 24.0  # Conservative estimate
-                optimization_gap = estimated_optimized - final_map_50
-                logging.info(f"[POTENTIAL] Estimated optimization improvement: +{optimization_gap:.1f}% mAP@0.5")
-                logging.info(f"[POTENTIAL] Relative improvement: +{(optimization_gap/final_map_50)*100:.1f}%")
-            
-            # Training efficiency analysis
-            total_epochs = len(df)
-            logging.info(f"[DURATION] True baseline training completed in {total_epochs} epochs")
-            
-            # Check for early stopping
-            if total_epochs < config['training_params']['epochs']:
-                logging.info("[STOPPED] Training stopped early (patience triggered)")
-            
-            # Save true baseline performance for comparison
-            true_baseline_results = {
-                'experiment': 'True Baseline - Raw Performance',
-                'map_50': final_map_50,
-                'map_50_95': final_map_50_95,
-                'precision': final_precision,
-                'recall': final_recall,
-                'total_epochs': total_epochs,
-                'training_date': datetime.now().isoformat(),
-                'dataset_type': 'original_visdrone',
-                'augmentation': 'yolov5_defaults_minimal',
-                'hyperparameters': 'yolov5_defaults',
-                'batch_size': config['training_params']['batch_size'],
-                'img_size': config['training_params']['img_size'],
-                'learning_rate': config['training_params']['lr0'],
-                'scientific_significance': 'Establishes raw model capability baseline'
-            }
-            
-            # Save for optimization comparison
-            baseline_file = paths['script_dir'] / f"true_baseline_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-            with open(baseline_file, 'w') as f:
-                json.dump(true_baseline_results, f, indent=2)
-            
-            logging.info(f"[SAVED] True baseline results saved for optimization comparison: {baseline_file}")
-            
-            # Next steps recommendations
-            logging.info("")
-            logging.info("[NEXT STEPS] Recommendations:")
-            logging.info("  1. Run optimized baseline (Trial-2 hyperparameters on original data)")
-            logging.info("  2. Compare true baseline vs optimized baseline")
-            logging.info("  3. Run environmental augmentation experiments")
-            logging.info("  4. Measure total improvement: true baseline → environmental")
-            logging.info("")
-            
-        except Exception as e:
-            logging.error(f"[ERROR] Error analyzing true baseline results: {str(e)}")
-            logging.info("[INFO] Please check results manually in the run directory")
-    
-    else:
-        logging.warning("[WARNING] results.csv not found - checking for other result files")
+        # Find best model weights
+        best_weights = paths['project_root'] / 'runs' / 'train' / config['training_params']['name'] / 'weights' / 'best.pt'
+        if not best_weights.exists():
+            logging.error("[ERROR] Best model weights not found")
+            return
         
-        # List available files for manual analysis
-        result_files = list(latest_run.glob("*"))
-        logging.info(f"[FILES] Available result files: {[f.name for f in result_files]}")
+        # Initialize evaluator
+        evaluator = YOLOEvaluationMetrics(
+            model_path=str(best_weights),
+            data_yaml=str(paths['config_dir'] / "baseline_dataset_config.yaml"),
+            img_size=config['training_params']['img_size']
+        )
+        
+        # Run comprehensive evaluation
+        metrics = evaluator.evaluate_all()
+        
+        # Log detailed metrics
+        logging.info("[METRICS] Comprehensive Evaluation Results:")
+        logging.info(f"  mAP@0.5: {metrics['map50']:.3f}")
+        logging.info(f"  mAP@0.5:0.95: {metrics['map']:.3f}")
+        logging.info(f"  Precision: {metrics['precision']:.3f}")
+        logging.info(f"  Recall: {metrics['recall']:.3f}")
+        logging.info(f"  F1-Score: {metrics['f1']:.3f}")
+        
+        # Class-wise performance
+        logging.info("[CLASSES] Per-class Performance:")
+        for cls_name, cls_metrics in metrics['per_class'].items():
+            logging.info(f"  {cls_name}:")
+            logging.info(f"    AP: {cls_metrics['ap']:.3f}")
+            logging.info(f"    Precision: {cls_metrics['precision']:.3f}")
+            logging.info(f"    Recall: {cls_metrics['recall']:.3f}")
+        
+        # Save detailed metrics
+        metrics_file = paths['project_root'] / 'results' / 'thesis_metrics' / f"yolov5n_true_baseline_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        metrics_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(metrics_file, 'w') as f:
+            json.dump(metrics, f, indent=2)
+        
+        logging.info(f"[SUCCESS] Detailed metrics saved to: {metrics_file}")
+        
+    except Exception as e:
+        logging.error(f"[ERROR] Failed to analyze results: {str(e)}")
+        raise
 
 def main():
     """Main true baseline training function"""
