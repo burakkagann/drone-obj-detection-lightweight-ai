@@ -200,3 +200,9 @@ requirements/*.lock
 
 # Exclude git internal objects
 .git/objects/
+
+# Claude Code and methodology files
+CLAUDE.md
+claude.md
+Z_Methodology.txt
+z_methodology.txt
