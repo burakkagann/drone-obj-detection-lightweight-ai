@@ -3,18 +3,19 @@
 YOLOv5n Trial-1 Training Script for VisDrone Dataset
 Master's Thesis: Robust Object Detection for Surveillance Drones
 
-This script implements Phase 3 (Trial-1) training for YOLOv5n on the VisDrone dataset
-using synthetic environmental augmentation and optimized hyperparameters.
+This script implements Phase 2 (Environmental Robustness) training for YOLOv5n on the VisDrone dataset
+using environmental augmentation AND optimized hyperparameters for robustness testing.
 
-Key features for Trial-1 (Phase 3):
-- Synthetic environmental augmentation (fog, night, blur, rain)
-- Enhanced standard augmentation pipeline
-- Optimized hyperparameters based on successful configurations
-- Baseline vs augmented comparison for thesis methodology
+Key features for Phase 2 (Environmental Robustness):
+- Environmental augmented dataset (original + synthetic conditions)
+- Standard real-time augmentation enabled
+- Optimized hyperparameters for robustness
+- Focus on low-visibility robustness vs. Phase 1 baseline
 
 Author: Burak Kağan Yılmazer
-Date: January 2025
+Date: July 2025
 Environment: yolov5n_env
+Protocol: Version 2.0 - True Baseline Framework
 """
 
 import os
@@ -35,13 +36,14 @@ sys.path.append(str(project_root))
 try:
     import torch
     import yaml
-    from train import train  # YOLOv5 train function
-    import val  # YOLOv5 validation
+    # YOLOv5 import
+    sys.path.append(str(project_root / "src" / "models" / "YOLOv5"))
+    import train
+    import val
 except ImportError as e:
-    print(f"[ERROR] Failed to import YOLOv5 modules: {e}")
+    print(f"[ERROR] Failed to import required packages: {e}")
     print("Please ensure you're using the yolov5n_env environment")
     print("Activation: .\\venvs\\yolov5n_env\\Scripts\\Activate.ps1")
-    print("Make sure you're in the YOLOv5 model directory or have proper imports")
     sys.exit(1)
 
 def setup_logging(output_dir: Path) -> None:
@@ -57,305 +59,232 @@ def setup_logging(output_dir: Path) -> None:
         ]
     )
     
-    return logging.getLogger(__name__)
+    logger = logging.getLogger(__name__)
+    return logger
 
 def validate_environment() -> None:
     """Validate training environment and dependencies"""
-    # Check CUDA availability
-    if torch.cuda.is_available():
-        gpu_name = torch.cuda.get_device_name(0)
-        gpu_memory = torch.cuda.get_device_properties(0).total_memory // 1024**3
-        print(f"[INFO] GPU: {gpu_name} ({gpu_memory}GB)")
-        print(f"[INFO] CUDA Version: {torch.version.cuda}")
-    else:
-        print("[WARNING] CUDA not available, training will use CPU")
-    
-    # Check PyTorch version
+    # Check PyTorch and GPU
     print(f"[INFO] PyTorch Version: {torch.__version__}")
     
-    # Validate dataset paths
-    dataset_config = project_root / "config" / "visdrone" / "yolov5n_v1" / "yolov5n_visdrone_config.yaml"
-    if not dataset_config.exists():
-        raise FileNotFoundError(f"Dataset configuration not found: {dataset_config}")
+    if torch.cuda.is_available():
+        gpu_count = torch.cuda.device_count()
+        for i in range(gpu_count):
+            gpu_name = torch.cuda.get_device_name(i)
+            print(f"[INFO] GPU {i}: {gpu_name}")
+        print(f"[INFO] CUDA Version: {torch.version.cuda}")
+    else:
+        print("[WARNING] No GPU available, training will use CPU")
     
-    # Validate YOLOv5 model path
-    yolov5_model_path = project_root / "src" / "models" / "YOLOv5" / "models" / "yolov5n.yaml"
-    if not yolov5_model_path.exists():
-        raise FileNotFoundError(f"YOLOv5n model configuration not found: {yolov5_model_path}")
+    # Validate environmental dataset paths
+    env_dataset_path = project_root / "data" / "environmental_augmented_dataset" / "visdrone"
+    if not env_dataset_path.exists():
+        print(f"[WARNING] Environmental dataset not found: {env_dataset_path}")
+        print("[INFO] Falling back to original dataset with real-time augmentation")
+        return False
     
-    print(f"[INFO] Dataset Config: {dataset_config}")
-    print(f"[INFO] Model Config: {yolov5_model_path}")
-    print(f"[INFO] Project Root: {project_root}")
+    print(f"[INFO] Environmental dataset: {env_dataset_path}")
+    return True
 
-def create_yolov5n_trial1_hyperparameters(output_dir: Path) -> Path:
-    """
-    Create YOLOv5n Trial-1 (Phase 3) hyperparameter configuration
-    Optimized for synthetic environmental augmentation and robust performance
-    """
+def create_trial1_config(use_env_dataset: bool = True) -> Path:
+    """Create YOLOv5n Trial-1 configuration following Protocol v2.0 Phase 2"""
+    config_dir = project_root / "config" / "visdrone" / "yolov5n_trial1"
+    config_dir.mkdir(parents=True, exist_ok=True)
     
-    # YOLOv5n Trial-1 hyperparameters (Phase 3 - Synthetic Augmentation)
-    yolov5n_trial1_hyp = {
-        # Learning rate configuration (proven optimal from Trial-2)
-        'lr0': 0.005,           # Initial learning rate
-        'lrf': 0.02,            # Final learning rate factor
-        'momentum': 0.937,      # SGD momentum
-        'weight_decay': 0.0005, # Optimizer weight decay
-        'warmup_epochs': 5.0,   # Warmup epochs
+    # Dataset configuration
+    if use_env_dataset:
+        # Use environmental augmented dataset
+        dataset_config = {
+            'path': str(project_root / "data" / "environmental_augmented_dataset" / "visdrone"),
+            'train': 'train/images',
+            'val': 'val/images', 
+            'test': 'test/images',
+            'nc': 10,
+            'names': [
+                'pedestrian', 'people', 'bicycle', 'car', 'van',
+                'truck', 'tricycle', 'awning-tricycle', 'bus', 'motor'
+            ]
+        }
+    else:
+        # Fallback to original dataset
+        dataset_config = {
+            'path': str(project_root / "data" / "my_dataset" / "visdrone"),
+            'train': 'train/images',
+            'val': 'val/images',
+            'test': 'test/images',
+            'nc': 10,
+            'names': [
+                'pedestrian', 'people', 'bicycle', 'car', 'van',
+                'truck', 'tricycle', 'awning-tricycle', 'bus', 'motor'
+            ]
+        }
+    
+    dataset_config_path = config_dir / "yolov5n_visdrone_trial1.yaml"
+    with open(dataset_config_path, 'w') as f:
+        yaml.dump(dataset_config, f, default_flow_style=False)
+    
+    # Hyperparameters configuration (PHASE 2 - ENVIRONMENTAL ROBUSTNESS)
+    hyp_config = {
+        # Learning rate settings (optimized for robustness)
+        'lr0': 0.005,         # Reduced initial learning rate for stability
+        'lrf': 0.02,          # Lower final learning rate
+        'momentum': 0.937,    # SGD momentum/Adam beta1
+        'weight_decay': 0.0005, # Optimizer weight decay 5e-4
+        'warmup_epochs': 3.0, # Warmup epochs (fractions ok)
         'warmup_momentum': 0.8, # Warmup initial momentum
-        'warmup_bias_lr': 0.1,  # Warmup initial bias lr
+        'warmup_bias_lr': 0.1, # Warmup initial bias lr
         
-        # Loss function weights (optimized for small object detection)
-        'box': 0.03,            # Box regression loss gain
-        'cls': 0.3,             # Classification loss gain
-        'obj': 1.2,             # Objectness loss gain (increased for small objects)
-        'iou_t': 0.15,          # IoU training threshold
-        'anchor_t': 5.0,        # Anchor-multiple threshold
-        'fl_gamma': 0.0,        # Focal loss gamma (disabled - proven from Trial-2)
+        # Loss function weights (optimized for small objects)
+        'box': 0.03,          # Box loss gain (reduced for small objects)
+        'cls': 0.3,           # Class loss gain  
+        'cls_pw': 1.0,        # Class BCELoss positive_weight
+        'obj': 1.2,           # Object loss gain (increased for objectness)
+        'obj_pw': 1.0,        # Object BCELoss positive_weight
+        'iou_t': 0.15,        # IoU training threshold (reduced for small objects)
+        'anchor_t': 4.0,      # Anchor-multiple threshold
+        'fl_gamma': 0.0,      # Focal loss gamma (disabled)
         
-        # Augmentation settings (ENHANCED for Phase 3)
-        'hsv_h': 0.02,          # HSV-Hue augmentation (range 0-1)
-        'hsv_s': 0.5,           # HSV-Saturation augmentation (range 0-1)
-        'hsv_v': 0.3,           # HSV-Value augmentation (range 0-1)
-        
-        # Geometric augmentation (optimized for drone imagery)
-        'degrees': 5.0,         # Image rotation (+/- deg)
-        'translate': 0.2,       # Image translation (+/- fraction)
-        'scale': 0.8,           # Image scale (+/- gain)
-        'shear': 0.0,           # Image shear (+/- deg) - disabled for aerial imagery
-        'perspective': 0.0001,  # Image perspective (+/- fraction) - minimal
-        
-        # Flip augmentation
-        'flipud': 0.0,          # Image flip up-down (probability) - disabled for drone imagery
-        'fliplr': 0.5,          # Image flip left-right (probability)
-        
-        # Advanced augmentation (KEY for Phase 3)
-        'mosaic': 0.8,          # Mosaic augmentation (probability) - ENABLED
-        'mixup': 0.4,           # Mixup augmentation (probability) - ENABLED
-        'copy_paste': 0.3,      # Copy-paste augmentation (probability) - for small objects
-        
-        # Additional augmentation settings
-        'paste_in': 0.1,        # Paste-in augmentation (probability)
-        'erasing': 0.2,         # Random erasing (probability)
+        # AUGMENTATION: ENABLED FOR ROBUSTNESS (Protocol v2.0 Phase 2)
+        'hsv_h': 0.02,        # Image HSV-Hue augmentation (fraction)
+        'hsv_s': 0.5,         # Image HSV-Saturation augmentation (fraction)
+        'hsv_v': 0.3,         # Image HSV-Value augmentation (fraction)
+        'degrees': 5.0,       # Image rotation (+/- deg)
+        'translate': 0.2,     # Image translation (+/- fraction)
+        'scale': 0.8,         # Image scale (+/- gain)
+        'shear': 0.0,         # Image shear (+/- deg)
+        'perspective': 0.0,   # Image perspective (+/- fraction), range 0-0.001
+        'flipud': 0.0,        # Image flip up-down (probability)
+        'fliplr': 0.5,        # Image flip left-right (probability)
+        'mosaic': 0.8,        # Image mosaic (probability)
+        'mixup': 0.4,         # Image mixup (probability)
+        'copy_paste': 0.3,    # Segment copy-paste (probability)
     }
     
-    # Save hyperparameters
-    hyp_file = output_dir / "hyp_yolov5n_trial1_phase3.yaml"
-    with open(hyp_file, 'w') as f:
-        yaml.dump(yolov5n_trial1_hyp, f, default_flow_style=False, sort_keys=False)
+    hyp_config_path = config_dir / "hyp_yolov5n_trial1.yaml"
+    with open(hyp_config_path, 'w') as f:
+        yaml.dump(hyp_config, f, default_flow_style=False)
     
-    return hyp_file
+    return dataset_config_path, hyp_config_path
 
 def train_yolov5n_trial1(epochs: int = 100, quick_test: bool = False) -> Path:
     """
-    Train YOLOv5n Trial-1 (Phase 3) model on VisDrone dataset
-    Using synthetic environmental augmentation and optimized hyperparameters
+    Train YOLOv5n Trial-1 (Phase 2) model on VisDrone dataset
+    Following Protocol v2.0 - Environmental Robustness Framework
     
     Args:
-        epochs: Number of training epochs (default: 100 for full training)
-        quick_test: If True, use minimal settings for quick validation
+        epochs: Number of training epochs (default: 100)
+        quick_test: If True, use reduced settings for quick validation
     
     Returns:
         Path to training results directory
     """
-    logger = logging.getLogger(__name__)
     
     # Create output directory
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_dir = project_root / "runs" / "train" / f"yolov5n_trial1_phase3_{timestamp}"
+    output_dir = project_root / "runs" / "train" / f"yolov5n_trial1_{timestamp}"
     output_dir.mkdir(parents=True, exist_ok=True)
     
     # Setup logging
     logger = setup_logging(output_dir)
-    logger.info("[START] YOLOv5n Trial-1 (Phase 3) Training Started")
-    logger.info("METHODOLOGY: Phase 3 - Synthetic Environmental Augmentation")
+    logger.info("[START] YOLOv5n Trial-1 (Phase 2) Training Started")
+    logger.info("PROTOCOL: Version 2.0 - True Baseline Framework")
+    logger.info("METHODOLOGY: Phase 2 - Environmental Robustness")
     logger.info(f"Output Directory: {output_dir}")
     
     try:
-        # Validate environment
-        validate_environment()
+        # Validate environment and check for environmental dataset
+        use_env_dataset = validate_environment()
         
-        # Create Trial-1 hyperparameter configuration
-        hyp_file = create_yolov5n_trial1_hyperparameters(output_dir)
-        logger.info(f"[CONFIG] Trial-1 hyperparameters saved: {hyp_file}")
-        
-        # Dataset configuration
-        dataset_config = project_root / "config" / "visdrone" / "yolov5n_v1" / "yolov5n_visdrone_config.yaml"
-        
-        # Model configuration
-        model_config = project_root / "src" / "models" / "YOLOv5" / "models" / "yolov5n.yaml"
-        
-        # Verify dataset paths
-        dataset_path = project_root / "data" / "my_dataset" / "visdrone"
-        if not dataset_path.exists():
-            raise FileNotFoundError(f"Dataset path not found: {dataset_path}")
-        
-        # Verify train/val/test directories exist
-        for subset in ['train', 'val', 'test']:
-            subset_path = dataset_path / subset / "images"
-            if not subset_path.exists():
-                raise FileNotFoundError(f"Dataset subset not found: {subset_path}")
-        
-        logger.info(f"[DATASET] VisDrone dataset verified at: {dataset_path}")
-        
-        # Training arguments for YOLOv5
-        train_args = argparse.Namespace(
-            weights='yolov5n.pt',  # Pretrained weights
-            cfg=str(model_config),  # Model configuration
-            data=str(dataset_config),  # Dataset configuration
-            hyp=str(hyp_file),  # Hyperparameter file
-            epochs=epochs,
-            batch_size=16,  # Optimized for RTX 3060
-            imgsz=640,  # Higher resolution for small objects
-            rect=False,  # Rectangular training
-            resume=False,
-            nosave=False,
-            noval=False,
-            noautoanchor=False,
-            evolve=None,
-            bucket='',
-            cache='ram',  # Cache images in RAM for faster training
-            image_weights=False,
-            device='0' if torch.cuda.is_available() else 'cpu',
-            multi_scale=True,  # Multi-scale training
-            single_cls=False,
-            optimizer='SGD',
-            sync_bn=False,
-            workers=4,
-            project=str(output_dir.parent),
-            name=output_dir.name,
-            exist_ok=True,
-            quad=False,
-            cos_lr=True,  # Cosine learning rate scheduler
-            label_smoothing=0.0,
-            patience=50,  # Early stopping patience
-            freeze=[],  # Layers to freeze
-            save_period=10,  # Save every 10 epochs
-            local_rank=-1,
-            entity=None,
-            upload_dataset=False,
-            bbox_interval=-1,
-            artifact_alias="latest"
-        )
+        # Create configuration files
+        logger.info("[CONFIG] Creating Trial-1 configuration...")
+        dataset_config_path, hyp_config_path = create_trial1_config(use_env_dataset)
         
         # Quick test adjustments
         if quick_test:
-            train_args.epochs = 20
-            train_args.batch_size = 8
-            train_args.workers = 2
-            train_args.cache = False
-            logger.info("[INFO] Quick test mode enabled (20 epochs, reduced settings)")
+            epochs = 20
+            logger.info(f"[INFO] Quick test mode enabled ({epochs} epochs)")
         
-        logger.info(f"[CONFIG] Training Arguments:")
-        for key, value in vars(train_args).items():
-            logger.info(f"  {key}: {value}")
+        # Training parameters
+        img_size = 640          # Input image size
+        batch_size = 16         # Batch size
+        workers = 4             # Data loader workers
         
-        # Log Phase 3 specific features
-        logger.info("[PHASE-3] Synthetic Environmental Augmentation Features:")
-        logger.info("  - SYNTHETIC AUGMENTATION: Fog, night, blur, rain simulation")
-        logger.info("  - ENHANCED STANDARD AUGMENTATION: Mosaic, mixup, HSV, geometric")
-        logger.info("  - OPTIMIZED HYPERPARAMETERS: Based on proven configurations")
-        logger.info("  - ROBUSTNESS FOCUS: Low-visibility performance improvement")
-        logger.info("  - METHODOLOGY COMPLIANCE: Phase 3 augmented vs Phase 2 baseline")
+        logger.info(f"[TRAINING] Configuration Summary:")
+        logger.info(f"  • Model: YOLOv5n (nano)")
+        logger.info(f"  • Phase: 2 (Environmental Robustness)")
+        logger.info(f"  • Dataset: {'Environmental Augmented' if use_env_dataset else 'Original + Real-time Aug'}")
+        logger.info(f"  • Epochs: {epochs}")
+        logger.info(f"  • Image Size: {img_size}")
+        logger.info(f"  • Batch Size: {batch_size}")
+        logger.info(f"  • Augmentation: ENABLED (robustness training)")
         logger.info("")
-        logger.info("[OPTIMIZATIONS] Key Trial-1 adaptations:")
-        logger.info("  - Learning rate: 0.005 (optimized for small objects)")
-        logger.info("  - Warmup epochs: 5.0 (extended for training stability)")
-        logger.info("  - Mosaic: 0.8 (enabled for context diversity)")
-        logger.info("  - Mixup: 0.4 (enabled for decision boundary learning)")
-        logger.info("  - Enhanced augmentation: HSV, geometric, copy-paste")
-        logger.info("  - Higher resolution: 640px for small object detection")
-        logger.info("  - Optimized batch size: 16 for stable gradients")
+        
+        # Log Phase 2 specific features
+        logger.info("[PHASE-2] Environmental Robustness Training Features:")
+        if use_env_dataset:
+            logger.info("  - ENVIRONMENTAL DATASET: Original + synthetic conditions")
+        else:
+            logger.info("  - ORIGINAL DATASET: With enhanced real-time augmentation")
+        logger.info("  - REAL-TIME AUGMENTATION: Mosaic, mixup, HSV, geometric enabled")
+        logger.info("  - OPTIMIZED HYPERPARAMETERS: Reduced LR, balanced loss weights")
+        logger.info("  - METHODOLOGY COMPLIANCE: Protocol v2.0 Phase 2")
+        logger.info("  - TARGET PERFORMANCE: >25% mAP@0.5 (+7pp from baseline)")
+        logger.info("")
+        
+        # Prepare training arguments
+        train_args = {
+            'img': img_size,
+            'batch': batch_size,
+            'epochs': epochs,
+            'data': str(dataset_config_path),
+            'weights': 'yolov5n.pt',  # Pre-trained weights
+            'hyp': str(hyp_config_path),
+            'project': str(project_root / "runs" / "train"),
+            'name': f'yolov5n_trial1_{timestamp}',
+            'cache': True,           # Cache images for faster training
+            'workers': workers,
+            'device': '',            # Auto-select device
+            'multi_scale': True,     # Multi-scale training enabled
+            'optimizer': 'SGD',      # SGD optimizer
+            'cos_lr': True,          # Cosine learning rate scheduler
+            'exist_ok': True,
+            'patience': 300,         # Early stopping patience
+            'save_period': -1,       # Save checkpoint every x epochs (-1 disabled)
+        }
         
         # Start training
-        logger.info("[TRAINING] Starting YOLOv5n Trial-1 (Phase 3) training...")
+        logger.info("[TRAINING] Starting YOLOv5n Trial-1 training...")
         
-        # Change to YOLOv5 directory for training
-        yolov5_dir = project_root / "src" / "models" / "YOLOv5"
-        original_dir = os.getcwd()
-        os.chdir(yolov5_dir)
+        # Import and run YOLOv5 training
+        sys.argv = ['train.py']  # Reset sys.argv for YOLOv5
+        for key, value in train_args.items():
+            sys.argv.extend([f'--{key}', str(value)])
         
-        try:
-            # Execute YOLOv5 training
-            train(train_args)
-            
-            # Training completed
-            logger.info("[SUCCESS] Training completed successfully!")
-            logger.info(f"Results saved to: {output_dir}")
-            
-        finally:
-            # Return to original directory
-            os.chdir(original_dir)
+        # Run training
+        train.main()
         
-        # METHODOLOGY COMPLIANCE: Comprehensive evaluation with baseline comparison
-        logger.info("[EVALUATION] Running comprehensive evaluation with baseline comparison...")
-        try:
-            # Find best model weights
-            best_weights = output_dir / "weights" / "best.pt"
-            if not best_weights.exists():
-                # Fallback to last weights
-                best_weights = output_dir / "weights" / "last.pt"
-            
-            if best_weights.exists():
-                logger.info(f"[SUCCESS] Model weights found: {best_weights}")
-                
-                # Run validation on best weights
-                os.chdir(yolov5_dir)
-                try:
-                    val_args = argparse.Namespace(
-                        data=str(dataset_config),
-                        weights=str(best_weights),
-                        batch_size=16,
-                        imgsz=640,
-                        conf_thres=0.001,
-                        iou_thres=0.6,
-                        task='val',
-                        device='0' if torch.cuda.is_available() else 'cpu',
-                        workers=4,
-                        single_cls=False,
-                        augment=False,
-                        verbose=True,
-                        save_txt=False,
-                        save_hybrid=False,
-                        save_conf=False,
-                        save_json=True,
-                        project=str(output_dir),
-                        name='validation',
-                        exist_ok=True,
-                        half=False,
-                        dnn=False
-                    )
-                    
-                    # Run validation
-                    val_results = val.run(**vars(val_args))
-                    
-                    if val_results:
-                        logger.info("[VALIDATION] Validation completed successfully!")
-                        logger.info("[TRIAL-1] Key Trial-1 Metrics for Thesis:")
-                        logger.info(f"  • mAP@0.5: {val_results[0]:.4f}")
-                        logger.info(f"  • mAP@0.5:0.95: {val_results[1]:.4f}")
-                        logger.info(f"  • Precision: {val_results[2]:.4f}")
-                        logger.info(f"  • Recall: {val_results[3]:.4f}")
-                        logger.info(f"  • F1-Score: {2 * val_results[2] * val_results[3] / (val_results[2] + val_results[3]):.4f}")
-                    
-                finally:
-                    os.chdir(original_dir)
-                
-                # Expected performance analysis
-                logger.info("[ANALYSIS] Synthetic Augmentation Impact Analysis:")
-                logger.info("  - Methodology compliance: Phase 3 augmentation vs Phase 2 baseline")
-                logger.info("  - Baseline comparison: YOLOv5n baseline (18.28% mAP@0.5)")
-                logger.info("  - Expected improvement: >20% mAP@0.5 with synthetic augmentation")
-                logger.info("  - Key factors: Environmental robustness, enhanced augmentation")
-                logger.info("  - Research value: Quantifies synthetic data benefits for thesis")
-                
-            else:
-                logger.warning("[WARNING] Model weights not found, skipping evaluation")
-                
-        except Exception as e:
-            logger.error(f"[ERROR] Comprehensive evaluation failed: {e}")
-            logger.info("[INFO] Training completed but evaluation failed - check model weights")
+        # Training completed
+        logger.info("[SUCCESS] Training completed successfully!")
+        logger.info(f"Results saved to: {output_dir}")
         
-        return output_dir
+        # Get results directory (YOLOv5 creates its own structure)
+        yolov5_results_dir = project_root / "runs" / "train" / f'yolov5n_trial1_{timestamp}'
+        
+        logger.info("[TRIAL-1] Phase 2 Environmental Robustness Training Complete:")
+        logger.info(f"  • Protocol: Version 2.0 - Environmental Robustness")
+        logger.info(f"  • Results: {yolov5_results_dir}")
+        logger.info(f"  • Training Epochs: {epochs}")
+        logger.info(f"  • Expected Performance: >25% mAP@0.5")
+        
+        # Performance analysis
+        logger.info("[ANALYSIS] Environmental Robustness Analysis:")
+        logger.info("  - Methodology compliance: Phase 2 environmental training complete")
+        logger.info("  - Target: >25% mAP@0.5 for thesis requirements")
+        logger.info("  - Comparison: Phase 1 baseline vs Phase 2 robustness")
+        logger.info("  - Expected improvement: +7pp absolute mAP improvement")
+        logger.info("  - Research impact: Complete methodology demonstration")
+        
+        return yolov5_results_dir
         
     except Exception as e:
         logger.error(f"[ERROR] Training failed: {str(e)}")
@@ -366,7 +295,7 @@ def train_yolov5n_trial1(epochs: int = 100, quick_test: bool = False) -> Path:
 
 def main():
     """Main function with command line argument parsing"""
-    parser = argparse.ArgumentParser(description="YOLOv5n Trial-1 (Phase 3) Training for VisDrone")
+    parser = argparse.ArgumentParser(description="YOLOv5n Trial-1 (Phase 2) Training for VisDrone")
     parser.add_argument('--epochs', type=int, default=100, 
                        help='Number of training epochs (default: 100)')
     parser.add_argument('--quick-test', action='store_true',
@@ -375,13 +304,13 @@ def main():
     args = parser.parse_args()
     
     print("="*80)
-    print("YOLOv5n Trial-1 (Phase 3) Training - VisDrone Dataset")
-    print("METHODOLOGY: Synthetic Environmental Augmentation")
+    print("YOLOv5n Trial-1 (Phase 2) Training - VisDrone Dataset")
+    print("PROTOCOL: Version 2.0 - Environmental Robustness Framework")
     print("="*80)
     print(f"Epochs: {args.epochs}")
     print(f"Quick Test: {args.quick_test}")
-    print(f"Phase: 3 (Synthetic Augmentation)")
-    print(f"Baseline Comparison: Phase 2 (18.28% mAP@0.5)")
+    print(f"Phase: 2 (Environmental Robustness)")
+    print(f"Target: >25% mAP@0.5 (+7pp from baseline)")
     print(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("="*80)
     
@@ -392,10 +321,11 @@ def main():
         )
         
         print("\n" + "="*80)
-        print("[SUCCESS] YOLOv5n Trial-1 (Phase 3) Training Complete!")
+        print("[SUCCESS] YOLOv5n Trial-1 (Phase 2) Training Complete!")
         print(f"Results: {output_dir}")
-        print("Expected: Improved performance over Phase 2 baseline (18.28% mAP@0.5)")
-        print("Target: >20% mAP@0.5 with synthetic environmental augmentation")
+        print("Expected: Environmental robustness vs baseline comparison")
+        print("Target: >25% mAP@0.5 with environmental augmentation")
+        print("Impact: Complete methodology demonstration")
         print("="*80)
         
     except Exception as e:

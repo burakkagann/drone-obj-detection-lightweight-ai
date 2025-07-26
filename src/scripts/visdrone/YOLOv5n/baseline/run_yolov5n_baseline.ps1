@@ -1,8 +1,8 @@
-# YOLOv5n Trial-1 (Phase 2) Training Script - VisDrone Dataset
+# YOLOv5n Baseline (Phase 1) Training Script - VisDrone Dataset
 # Master's Thesis: Robust Object Detection for Surveillance Drones
 # 
-# This PowerShell script executes YOLOv5n Trial-1 (Phase 2) training with 
-# environmental augmentation to establish robustness performance.
+# This PowerShell script executes YOLOv5n Baseline (Phase 1) training with 
+# NO augmentation to establish true baseline performance.
 #
 # Author: Burak Kağan Yılmazer
 # Date: July 2025
@@ -30,15 +30,15 @@ function Write-Error { Write-ColorOutput Red $args }
 function Write-Info { Write-ColorOutput Cyan $args }
 
 if ($Help) {
-    Write-Host "YOLOv5n Trial-1 (Phase 2) Training Script" -ForegroundColor Green
-    Write-Host "=========================================" -ForegroundColor Green
+    Write-Host "YOLOv5n Baseline (Phase 1) Training Script" -ForegroundColor Green
+    Write-Host "==========================================" -ForegroundColor Green
     Write-Host ""
     Write-Host "PROTOCOL:" -ForegroundColor Yellow
     Write-Host "  Version 2.0 - True Baseline Framework"
-    Write-Host "  Phase 2: Environmental Robustness"
+    Write-Host "  Phase 1: True Baseline (No Augmentation)"
     Write-Host ""
     Write-Host "USAGE:" -ForegroundColor Yellow
-    Write-Host "  .\run_yolov5n_trial1.ps1 [-Epochs 100] [-QuickTest] [-Help]"
+    Write-Host "  .\run_yolov5n_baseline.ps1 [-Epochs 100] [-QuickTest] [-Help]"
     Write-Host ""
     Write-Host "PARAMETERS:" -ForegroundColor Yellow
     Write-Host "  -Epochs      Number of training epochs (default: 100)"
@@ -46,63 +46,63 @@ if ($Help) {
     Write-Host "  -Help        Show this help message"
     Write-Host ""
     Write-Host "EXAMPLES:" -ForegroundColor Yellow
-    Write-Host "  .\run_yolov5n_trial1.ps1                    # Standard 100-epoch training"
-    Write-Host "  .\run_yolov5n_trial1.ps1 -Epochs 50         # Reduced 50-epoch training"
-    Write-Host "  .\run_yolov5n_trial1.ps1 -QuickTest         # Quick 20-epoch validation"
+    Write-Host "  .\run_yolov5n_baseline.ps1                    # Standard 100-epoch baseline"
+    Write-Host "  .\run_yolov5n_baseline.ps1 -Epochs 50         # Reduced 50-epoch training"
+    Write-Host "  .\run_yolov5n_baseline.ps1 -QuickTest         # Quick 20-epoch validation"
     Write-Host ""
-    Write-Host "PHASE 2 FEATURES:" -ForegroundColor Yellow
-    Write-Host "  Environmental robustness training:"
-    Write-Host "  • Environmental augmented dataset (if available)"
-    Write-Host "  • Real-time augmentation enabled"
-    Write-Host "  • Optimized hyperparameters for robustness"
-    Write-Host "  • Multi-scale training enabled"
-    Write-Host "  • Complete methodology demonstration"
+    Write-Host "PHASE 1 FEATURES:" -ForegroundColor Yellow
+    Write-Host "  True baseline training with NO augmentation:"
+    Write-Host "  • NO real-time augmentation (all disabled)"
+    Write-Host "  • NO synthetic environmental augmentation"
+    Write-Host "  • Original VisDrone dataset only"
+    Write-Host "  • Minimal preprocessing (resize, normalize)"
+    Write-Host "  • Pure model capability measurement"
     Write-Host ""
     Write-Host "EXPECTED PERFORMANCE:" -ForegroundColor Yellow
-    Write-Host "  Target: >25% mAP@0.5 (+7pp from baseline)"
-    Write-Host "  Methodology: Demonstrate complete research impact"
-    Write-Host "  Thesis value: Show environmental robustness improvement"
+    Write-Host "  Target: >18% mAP@0.5 (protocol requirement)"
+    Write-Host "  Methodology: Establish absolute reference point for Phase 2"
+    Write-Host "  Thesis value: Show complete methodology impact (18% → 25%+)"
     exit 0
 }
 
 Write-Host "================================================================" -ForegroundColor Green
-Write-Host "YOLOv5n Trial-1 (Phase 2) Training - VisDrone Dataset" -ForegroundColor Green
-Write-Host "PROTOCOL: Version 2.0 - Environmental Robustness Framework" -ForegroundColor Green
+Write-Host "YOLOv5n Baseline (Phase 1) Training - VisDrone Dataset" -ForegroundColor Green
+Write-Host "PROTOCOL: Version 2.0 - True Baseline Framework" -ForegroundColor Green
 Write-Host "================================================================" -ForegroundColor Green
 Write-Host ""
 
 # Training configuration summary
 Write-Info "[CONFIGURATION] Training Setup:"
 Write-Host "  • Model: YOLOv5n (nano)"
-Write-Host "  • Phase: 2 (Environmental Robustness)"
+Write-Host "  • Phase: 1 (True Baseline - No Augmentation)"
 Write-Host "  • Protocol: Version 2.0 Framework"
-Write-Host "  • Dataset: Environmental Augmented (if available)"
+Write-Host "  • Dataset: VisDrone (original only)"
 Write-Host "  • Epochs: $Epochs"
 if ($QuickTest) {
     Write-Host "  • Mode: Quick Test (20 epochs)" -ForegroundColor Yellow
 } else {
-    Write-Host "  • Mode: Full Robustness Training"
+    Write-Host "  • Mode: Full Baseline Training"
 }
-Write-Host "  • Target: >25% mAP@0.5 (+7pp improvement)"
+Write-Host "  • Target: >18% mAP@0.5 (thesis requirement)"
 Write-Host "  • GPU: NVIDIA RTX 3060 Laptop (5GB)"
 Write-Host "  • Environment: yolov5n_env"
 Write-Host ""
 
-Write-Info "[METHODOLOGY] Phase 2 Key Features:"
-Write-Host "  • Environmental Dataset: Original + synthetic conditions"
-Write-Host "  • Real-time Augmentation: Mosaic, mixup, HSV, geometric"
-Write-Host "  • Multi-scale Training: Enhanced for robustness"
-Write-Host "  • Optimized Hyperparameters: Reduced LR, balanced losses"
+Write-Info "[METHODOLOGY] Phase 1 Key Features:"
+Write-Host "  • True Baseline: NO augmentation whatsoever"
+Write-Host "  • Original Dataset: VisDrone images and labels only"
+Write-Host "  • Minimal Processing: Resize (640x640) and normalize only"
+Write-Host "  • YOLOv5n Architecture: Lightweight nano model"
 Write-Host "  • Batch Size: 16 (optimized for RTX 3060)"
-Write-Host "  • Complete Methodology: Show total research impact"
+Write-Host "  • Pure Model Performance: Absolute reference point"
 Write-Host ""
 
 Write-Info "[THESIS OBJECTIVES] Expected Outcomes:"
-Write-Host "  • Target mAP@0.5: >25% (dramatic improvement from 18%)"
-Write-Host "  • Model Size: <7MB (maintained edge readiness)"
-Write-Host "  • Inference Speed: >20 FPS (maintained real-time)"
-Write-Host "  • Research Impact: +7pp absolute improvement demonstration"
-Write-Host "  • Methodology: Complete environmental robustness validation"
+Write-Host "  • Target mAP@0.5: >18% (minimum protocol requirement)"
+Write-Host "  • Model Size: <7MB (edge deployment ready)"
+Write-Host "  • Inference Speed: >20 FPS (real-time capability)"
+Write-Host "  • Methodology: True baseline for Phase 2 comparison"
+Write-Host "  • Research Value: Demonstrate complete methodology impact"
 Write-Host ""
 
 # Validate repository location
@@ -150,32 +150,39 @@ try {
     exit 1
 }
 
-# Validate datasets
-Write-Info "[VALIDATION] Checking dataset availability..."
+# Validate dataset
+Write-Info "[VALIDATION] Checking VisDrone dataset..."
+$datasetPath = ".\data\my_dataset\visdrone"
+$trainPath = "$datasetPath\train\images"
+$valPath = "$datasetPath\val\images"
 
-# Check for environmental augmented dataset
-$envDatasetPath = ".\data\environmental_augmented_dataset\visdrone"
-$origDatasetPath = ".\data\my_dataset\visdrone"
-
-if (Test-Path $envDatasetPath) {
-    Write-Success "[OPTIMAL] Environmental augmented dataset found:"
-    Write-Host "  • Dataset path: $envDatasetPath"
-    Write-Host "  • Contains: Original + synthetic environmental conditions"
-    Write-Host "  • Training mode: Phase 2 optimal (environmental + real-time aug)"
-} elseif (Test-Path $origDatasetPath) {
-    Write-Warning "[FALLBACK] Using original dataset with enhanced augmentation:"
-    Write-Host "  • Dataset path: $origDatasetPath"
-    Write-Host "  • Contains: Original VisDrone images only"
-    Write-Host "  • Training mode: Phase 2 fallback (enhanced real-time aug only)"
-} else {
-    Write-Error "[ERROR] No valid dataset found"
-    Write-Host "Required: Either environmental augmented or original VisDrone dataset"
+if (-not (Test-Path $datasetPath)) {
+    Write-Error "[ERROR] VisDrone dataset not found: $datasetPath"
     exit 1
 }
 
+if (-not (Test-Path $trainPath)) {
+    Write-Error "[ERROR] Training images not found: $trainPath"
+    exit 1
+}
+
+if (-not (Test-Path $valPath)) {
+    Write-Error "[ERROR] Validation images not found: $valPath"
+    exit 1
+}
+
+# Count dataset files
+$trainCount = (Get-ChildItem "$trainPath\*.jpg").Count
+$valCount = (Get-ChildItem "$valPath\*.jpg").Count
+Write-Success "[READY] Dataset validated:"
+Write-Host "  • Dataset path: $datasetPath"
+Write-Host "  • Training images: $trainCount files"
+Write-Host "  • Validation images: $valCount files"
+Write-Host "  • Original dataset: No synthetic augmentation"
+
 Write-Host ""
-Write-Info "[TRAINING] Starting YOLOv5n Trial-1 (Phase 2) training..."
-Write-Host "Training script: src\scripts\visdrone\YOLOv5n\trial-1\train_yolov5n_trial1.py"
+Write-Info "[TRAINING] Starting YOLOv5n Baseline (Phase 1) training..."
+Write-Host "Training script: src\scripts\visdrone\YOLOv5n\baseline\train_yolov5n_baseline.py"
 if ($QuickTest) {
     Write-Host "Expected duration: 30-45 minutes (quick test - 20 epochs)"
 } else {
@@ -185,7 +192,7 @@ Write-Host ""
 
 # Prepare Python arguments
 $pythonArgs = @(
-    "src\scripts\visdrone\YOLOv5n\trial-1\train_yolov5n_trial1.py",
+    "src\scripts\visdrone\YOLOv5n\baseline\train_yolov5n_baseline.py",
     "--epochs", $Epochs.ToString()
 )
 
@@ -194,7 +201,7 @@ if ($QuickTest) {
 }
 
 # Execute training
-Write-Info "[EXECUTION] Running Phase 2 environmental robustness training..."
+Write-Info "[EXECUTION] Running Phase 1 baseline training..."
 Write-Host "Command: python $($pythonArgs -join ' ')"
 Write-Host ""
 
@@ -203,27 +210,27 @@ try {
     
     if ($process.ExitCode -eq 0) {
         Write-Host ""
-        Write-Success "[SUCCESS] YOLOv5n Trial-1 (Phase 2) training completed successfully!"
+        Write-Success "[SUCCESS] YOLOv5n Baseline (Phase 1) training completed successfully!"
         Write-Host ""
         Write-Info "[RESULTS] Training Summary:"
-        Write-Host "  • Model: YOLOv5n Trial-1 (Phase 2)"
+        Write-Host "  • Model: YOLOv5n Baseline (Phase 1)"
         Write-Host "  • Epochs: $Epochs"
-        Write-Host "  • Dataset: Environmental (if available) + Real-time Aug"
-        Write-Host "  • Augmentation: Full robustness suite enabled"
-        Write-Host "  • Results: runs\train\yolov5n_trial1_*"
+        Write-Host "  • Dataset: VisDrone (original only)"
+        Write-Host "  • Augmentation: None (true baseline)"
+        Write-Host "  • Results: runs\train\yolov5n_baseline_*"
         Write-Host ""
         Write-Info "[METHODOLOGY COMPLIANCE] Phase Analysis:"
-        Write-Host "  • Phase 2 Robustness: Environmental training complete"
-        Write-Host "  • Target Performance: >25% mAP@0.5"
-        Write-Host "  • Expected Improvement: +7pp from Phase 1 baseline"
-        Write-Host "  • Research Impact: Complete methodology demonstration"
+        Write-Host "  • Phase 1 Baseline: TRUE baseline established"
+        Write-Host "  • Target Performance: >18% mAP@0.5"
+        Write-Host "  • Next Phase: Phase 2 environmental robustness training"
+        Write-Host "  • Expected Improvement: 18% → 25%+ mAP@0.5 in Phase 2"
         Write-Host ""
-        Write-Info "[COMPARATIVE ANALYSIS] Phase 1 vs Phase 2:"
-        Write-Host "  1. Compare baseline (18% mAP) vs robustness (25%+ mAP)"
-        Write-Host "  2. Quantify environmental robustness improvement"
-        Write-Host "  3. Document complete methodology impact"
-        Write-Host "  4. Generate thesis-quality comparative results"
-        Write-Host "  5. Validate edge deployment readiness"
+        Write-Info "[NEXT STEPS] After Phase 1 completion:"
+        Write-Host "  1. Evaluate baseline performance metrics"
+        Write-Host "  2. Execute Phase 2 environmental robustness training"
+        Write-Host "  3. Compare Phase 1 vs Phase 2 performance"
+        Write-Host "  4. Demonstrate complete methodology impact"
+        Write-Host "  5. Generate thesis-quality comparative analysis"
         
     } else {
         Write-Error "[ERROR] Training failed with exit code: $($process.ExitCode)"
@@ -238,5 +245,5 @@ try {
 
 Write-Host ""
 Write-Host "================================================================" -ForegroundColor Green
-Write-Success "[COMPLETED] YOLOv5n Trial-1 (Phase 2) Training Session Finished"
+Write-Success "[COMPLETED] YOLOv5n Baseline (Phase 1) Training Session Finished"
 Write-Host "================================================================" -ForegroundColor Green

@@ -410,7 +410,7 @@ def train_mobilenet_ssd_baseline(epochs: int = 50, quick_test: bool = False) -> 
         # Training configuration
         callbacks = [
             tf.keras.callbacks.ModelCheckpoint(
-                filepath=output_dir / 'best_model.h5',
+                filepath=str(output_dir / 'best_model.h5'),
                 monitor='val_loss',
                 save_best_only=True,
                 verbose=1
@@ -429,7 +429,7 @@ def train_mobilenet_ssd_baseline(epochs: int = 50, quick_test: bool = False) -> 
                 verbose=1
             ),
             tf.keras.callbacks.CSVLogger(
-                output_dir / 'training_log.csv'
+                str(output_dir / 'training_log.csv')
             )
         ]
         
@@ -453,7 +453,7 @@ def train_mobilenet_ssd_baseline(epochs: int = 50, quick_test: bool = False) -> 
         )
         
         # Save final model
-        model.save(output_dir / 'final_model.h5')
+        model.save(str(output_dir / 'final_model.h5'))
         
         # Save training history
         history_dict = {

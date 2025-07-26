@@ -147,7 +147,7 @@ Write-Host "  • Location: $(Get-Location)"
 # Validate TensorFlow installation and dependencies
 Write-Info "[VALIDATION] Checking TensorFlow installation..."
 try {
-    $tfCheck = python -c "import tensorflow as tf; print('TensorFlow:', tf.__version__); print('GPU Available:', len(tf.config.list_physical_devices('GPU')) > 0); print('Keras:', tf.keras.__version__); print('TensorFlow ready!')" 2>$null
+    $tfCheck = python -c "import tensorflow as tf; print('TensorFlow:', tf.__version__); print('GPU Available:', len(tf.config.list_physical_devices('GPU')) > 0); print('TensorFlow ready!')" 2>$null
     if ($LASTEXITCODE -eq 0) {
         Write-Success "[READY] TensorFlow installation validated"
         Write-Host $tfCheck
