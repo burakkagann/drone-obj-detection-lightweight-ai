@@ -122,12 +122,10 @@ if ((Get-Location).Path -ne $expectedPath) {
     }
 }
 
-# Virtual environment note - Manual activation required
-Write-Info "[ENVIRONMENT] Virtual Environment Management:"
-Write-Host "  • Please ensure you have activated the appropriate YOLOv5n environment"
-Write-Host "  • Recommended: .\venvs\yolov8n-visdrone_venv\Scripts\Activate.ps1"
-Write-Host "  • Alternative: Any environment with proper PyTorch and YOLOv5 dependencies"
-Write-Host "  • The script will use the currently activated Python environment"
+# Environment validation - assumes manual activation
+Write-Info "[ENVIRONMENT] Using currently activated Python environment"
+Write-Host "  • Ensure YOLOv5n VisDrone environment is activated before running this script"
+Write-Host "  • Required: .\venvs\visdrone\yolov5n_visdrone_env\Scripts\Activate.ps1"
 
 Write-Host ""
 Write-Info "[VALIDATION] Environment Information:"

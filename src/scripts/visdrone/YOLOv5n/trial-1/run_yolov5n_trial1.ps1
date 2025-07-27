@@ -10,7 +10,7 @@
 # Protocol: Version 2.0 - True Baseline Framework
 
 param(
-    [int]$Epochs = 100,
+    [int]$Epochs = 50,
     [switch]$QuickTest,
     [switch]$Help
 )
@@ -41,13 +41,13 @@ if ($Help) {
     Write-Host "  .\run_yolov5n_trial1.ps1 [-Epochs 100] [-QuickTest] [-Help]"
     Write-Host ""
     Write-Host "PARAMETERS:" -ForegroundColor Yellow
-    Write-Host "  -Epochs      Number of training epochs (default: 100)"
+    Write-Host "  -Epochs      Number of training epochs (default: 50)"
     Write-Host "  -QuickTest   Run quick validation (20 epochs)"
     Write-Host "  -Help        Show this help message"
     Write-Host ""
     Write-Host "EXAMPLES:" -ForegroundColor Yellow
-    Write-Host "  .\run_yolov5n_trial1.ps1                    # Standard 100-epoch training"
-    Write-Host "  .\run_yolov5n_trial1.ps1 -Epochs 50         # Reduced 50-epoch training"
+    Write-Host "  .\run_yolov5n_trial1.ps1                    # Standard 50-epoch training"
+    Write-Host "  .\run_yolov5n_trial1.ps1 -Epochs 100        # Extended 100-epoch training"
     Write-Host "  .\run_yolov5n_trial1.ps1 -QuickTest         # Quick 20-epoch validation"
     Write-Host ""
     Write-Host "PHASE 2 FEATURES:" -ForegroundColor Yellow
@@ -122,12 +122,10 @@ if ((Get-Location).Path -ne $expectedPath) {
     }
 }
 
-# Virtual environment note - Manual activation required
-Write-Info "[ENVIRONMENT] Virtual Environment Management:"
-Write-Host "  • Please ensure you have activated the appropriate YOLOv5n environment"
-Write-Host "  • Recommended: .\venvs\yolov8n-visdrone_venv\Scripts\Activate.ps1"
-Write-Host "  • Alternative: Any environment with proper PyTorch and YOLOv5 dependencies"
-Write-Host "  • The script will use the currently activated Python environment"
+# Environment validation - assumes manual activation  
+Write-Info "[ENVIRONMENT] Using currently activated Python environment"
+Write-Host "  • Ensure YOLOv5n VisDrone environment is activated before running this script"
+Write-Host "  • Required: .\venvs\visdrone\yolov5n_visdrone_env\Scripts\Activate.ps1"
 
 Write-Host ""
 Write-Info "[VALIDATION] Environment Information:"

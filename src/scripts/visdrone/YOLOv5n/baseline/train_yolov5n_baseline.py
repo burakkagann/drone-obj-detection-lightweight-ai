@@ -26,6 +26,10 @@ import warnings
 from datetime import datetime
 from pathlib import Path
 
+# Disable wandb completely
+os.environ['WANDB_DISABLED'] = 'true'
+os.environ['WANDB_MODE'] = 'disabled'
+
 # Suppress warnings for clean output
 warnings.filterwarnings("ignore", message=".*torch.cuda.amp.autocast.*", category=FutureWarning)
 
@@ -186,10 +190,10 @@ def train_yolov5n_baseline(epochs: int = 100, quick_test: bool = False) -> Path:
             epochs = 20
             logger.info(f"[INFO] Quick test mode enabled ({epochs} epochs)")
         
-        # Training parameters
+        # Training parameters (optimized for RTX 3060 6GB)
         img_size = 640          # Input image size
-        batch_size = 16         # Batch size
-        workers = 4             # Data loader workers
+        batch_size = 8          # Reduced batch size for memory stability
+        workers = 0             # Disable multiprocessing on Windows to avoid shared memory errors
         
         logger.info(f"[TRAINING] Configuration Summary:")
         logger.info(f"  • Model: YOLOv5n (nano)")
@@ -216,7 +220,8 @@ def train_yolov5n_baseline(epochs: int = 100, quick_test: bool = False) -> Path:
             'batch': batch_size,
             'epochs': epochs,
             'data': str(dataset_config_path),
-            'weights': 'yolov5n.pt',  # Pre-trained weights
+            'cfg': str(project_root / "src" / "models" / "YOLOv5" / "models" / "yolov5n.yaml"),  # YOLOv5n architecture
+            'weights': 'yolov5n.pt',  # YOLOv5n pre-trained weights
             'hyp': str(hyp_config_path),
             'project': str(project_root / "runs" / "train"),
             'name': f'yolov5n_baseline_{timestamp}',
@@ -237,12 +242,13 @@ def train_yolov5n_baseline(epochs: int = 100, quick_test: bool = False) -> Path:
         # Construct command for YOLOv5 training
         yolov5_path = project_root / "src" / "models" / "YOLOv5"
         train_cmd = [
-            "python",
+            sys.executable,  # Use current Python executable from venv
             str(yolov5_path / "train.py"),
             "--img", str(train_args['img']),
             "--batch", str(train_args['batch']),
             "--epochs", str(train_args['epochs']),
             "--data", str(train_args['data']),
+            "--cfg", str(train_args['cfg']),
             "--weights", train_args['weights'],
             "--hyp", str(train_args['hyp']),
             "--project", str(train_args['project']),
@@ -264,9 +270,18 @@ def train_yolov5n_baseline(epochs: int = 100, quick_test: bool = False) -> Path:
         
         logger.info(f"[TRAINING] Command: {' '.join(train_cmd)}")
         
-        # Execute training
+        # Execute training with optimized settings
         import subprocess
-        result = subprocess.run(train_cmd, cwd=str(yolov5_path), capture_output=False)
+        import os
+        
+        # Optimize environment for memory and stability
+        env = os.environ.copy()
+        env['WANDB_DISABLED'] = 'true'
+        env['WANDB_MODE'] = 'disabled'
+        env['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'  # Better memory management
+        env['CUDA_LAUNCH_BLOCKING'] = '1'  # Better error reporting
+        
+        result = subprocess.run(train_cmd, cwd=str(yolov5_path), capture_output=False, env=env)
         
         if result.returncode != 0:
             raise RuntimeError(f"YOLOv5 training failed with return code {result.returncode}")
