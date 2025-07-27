@@ -1,261 +1,252 @@
-# NanoDet Baseline (Phase 2) Training Script - VisDrone Dataset
-# Master's Thesis: Robust Object Detection for Surveillance Drones
-# 
-# This PowerShell script executes NanoDet Baseline (Phase 2) training with 
-# original dataset only and minimal augmentation for true baseline performance.
-#
-# Author: Burak Kağan Yılmazer
-# Date: January 2025
-# Environment: nanodet_env
+#!/usr/bin/env pwsh
+<#
+.SYNOPSIS
+    NanoDet Phase 1 (True Baseline) Training Script - VisDrone Dataset
+    Master's Thesis: Robust Object Detection for Surveillance Drones
+
+.DESCRIPTION
+    Professional PowerShell wrapper for NanoDet Phase 1 (True Baseline) training
+    following Protocol Version 2.0 - True Baseline Framework.
+    
+    Key Features:
+    - Phase 1: True baseline training with NO AUGMENTATION
+    - Original VisDrone dataset only (Protocol v2.0 compliance)
+    - Ultra-lightweight model (<3MB target)
+    - Comprehensive evaluation integration
+    - Professional error handling and logging
+
+.PARAMETER Epochs
+    Number of training epochs (default: 100)
+
+.PARAMETER QuickTest
+    Run quick test with reduced settings (20 epochs)
+
+.EXAMPLE
+    .\run_nanodet_baseline.ps1
+    .\run_nanodet_baseline.ps1 -Epochs 150
+    .\run_nanodet_baseline.ps1 -QuickTest
+
+.NOTES
+    Author: Burak Kağan Yılmazer
+    Date: July 2025
+    Environment: nanodet_env
+    Protocol: Version 2.0 - True Baseline Framework
+#>
 
 param(
-    [int]$Epochs = 150,
-    [switch]$QuickTest,
-    [switch]$Help
+    [Parameter(Mandatory=$false)]
+    [int]$Epochs = 100,
+    
+    [Parameter(Mandatory=$false)]
+    [switch]$QuickTest
 )
 
-function Write-ColorOutput($ForegroundColor) {
-    $fc = $host.UI.RawUI.ForegroundColor
-    $host.UI.RawUI.ForegroundColor = $ForegroundColor
-    if ($args) {
-        Write-Output $args
+# Script configuration
+$ErrorActionPreference = "Stop"
+$InformationPreference = "Continue"
+
+# Project paths
+$ProjectRoot = (Get-Item $PSScriptRoot).Parent.Parent.Parent.Parent.Parent.FullName
+$ScriptPath = Join-Path $PSScriptRoot "train_nanodet_baseline.py"
+
+function Write-Header {
+    param([string]$Title, [string]$Phase)
+    
+    Write-Host "=" * 80 -ForegroundColor Cyan
+    Write-Host $Title -ForegroundColor White
+    Write-Host "PROTOCOL: Version 2.0 - True Baseline Framework" -ForegroundColor Green
+    Write-Host "=" * 80 -ForegroundColor Cyan
+    Write-Host "Phase: $Phase" -ForegroundColor Yellow
+    Write-Host "Target: >12% mAP@0.5 (ultra-lightweight baseline)" -ForegroundColor Magenta
+    Write-Host "Model Size Target: <3MB" -ForegroundColor Magenta
+    Write-Host "Timestamp: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Gray
+    Write-Host "=" * 80 -ForegroundColor Cyan
+    Write-Host ""
+}
+
+function Write-StatusMessage {
+    param([string]$Message, [string]$Type = "INFO")
+    
+    $timestamp = Get-Date -Format "HH:mm:ss"
+    switch ($Type) {
+        "SUCCESS" { Write-Host "[$timestamp] [SUCCESS] $Message" -ForegroundColor Green }
+        "ERROR"   { Write-Host "[$timestamp] [ERROR] $Message" -ForegroundColor Red }
+        "WARNING" { Write-Host "[$timestamp] [WARNING] $Message" -ForegroundColor Yellow }
+        default   { Write-Host "[$timestamp] [INFO] $Message" -ForegroundColor Cyan }
     }
-    $host.UI.RawUI.ForegroundColor = $fc
 }
 
-function Write-Success { Write-ColorOutput Green $args }
-function Write-Warning { Write-ColorOutput Yellow $args }
-function Write-Error { Write-ColorOutput Red $args }
-function Write-Info { Write-ColorOutput Cyan $args }
-
-if ($Help) {
-    Write-Host "NanoDet Baseline (Phase 2) Training Script" -ForegroundColor Green
-    Write-Host "===========================================" -ForegroundColor Green
-    Write-Host ""
-    Write-Host "METHODOLOGY:" -ForegroundColor Yellow
-    Write-Host "  Phase 2: Original Dataset Only, Minimal Augmentation"
-    Write-Host "  Ultra-lightweight baseline (<3MB) for Phase 2 vs Phase 3 comparison"
-    Write-Host "  Establish true baseline performance benchmarks"
-    Write-Host ""
-    Write-Host "USAGE:" -ForegroundColor Yellow
-    Write-Host "  .\run_nanodet_baseline.ps1 [-Epochs 150] [-QuickTest] [-Help]"
-    Write-Host ""
-    Write-Host "PARAMETERS:" -ForegroundColor Yellow
-    Write-Host "  -Epochs      Number of training epochs (default: 150)"
-    Write-Host "  -QuickTest   Run quick validation (20 epochs, minimal settings)"
-    Write-Host "  -Help        Show this help message"
-    Write-Host ""
-    Write-Host "EXAMPLES:" -ForegroundColor Yellow
-    Write-Host "  .\run_nanodet_baseline.ps1                    # Standard 150-epoch baseline"
-    Write-Host "  .\run_nanodet_baseline.ps1 -Epochs 200        # Extended 200-epoch training"
-    Write-Host "  .\run_nanodet_baseline.ps1 -QuickTest         # Quick 20-epoch validation"
-    Write-Host ""
-    Write-Host "PHASE 2 BASELINE FEATURES:" -ForegroundColor Yellow
-    Write-Host "  TRUE baseline methodology:"
-    Write-Host "  • Original VisDrone dataset ONLY (no synthetic augmentation)"
-    Write-Host "  • Minimal augmentation (resize, normalize only)"
-    Write-Host "  • Ultra-lightweight architecture (<3MB target)"
-    Write-Host "  • PyTorch-based simplified NanoDet implementation"
-    Write-Host "  • Comprehensive evaluation metrics collection"
-    Write-Host ""
-    Write-Host "EXPECTED PERFORMANCE:" -ForegroundColor Yellow
-    Write-Host "  Target: >15% mAP@0.5 (ultra-lightweight baseline)"
-    Write-Host "  Model Size: <3MB (most aggressive size reduction)"
-    Write-Host "  Methodology: Phase 2 true baseline for comparison"
-    Write-Host "  Thesis value: Establish baseline for Phase 3 comparison"
-    exit 0
+function Test-Prerequisites {
+    Write-StatusMessage "Validating prerequisites..."
+    
+    # Check Python
+    if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
+        throw "Python not found. Please ensure Python is installed and in PATH."
+    }
+    
+    # Note: Virtual environment should be manually activated before running this script
+    
+    # Check training script
+    if (-not (Test-Path $ScriptPath)) {
+        throw "Training script not found: $ScriptPath"
+    }
+    
+    # Check project structure
+    $DataPath = Join-Path $ProjectRoot "data\my_dataset\visdrone"
+    if (-not (Test-Path $DataPath)) {
+        Write-StatusMessage "VisDrone dataset not found at $DataPath" "WARNING"
+        Write-StatusMessage "Please ensure dataset is properly installed" "WARNING"
+    }
+    
+    Write-StatusMessage "Prerequisites validation completed" "SUCCESS"
 }
 
-Write-Host "================================================================" -ForegroundColor Green
-Write-Host "NanoDet Baseline (Phase 2) Training - VisDrone Dataset" -ForegroundColor Green
-Write-Host "METHODOLOGY: Original Dataset Only, Minimal Augmentation" -ForegroundColor Green
-Write-Host "================================================================" -ForegroundColor Green
-Write-Host ""
-
-# Training configuration summary
-Write-Info "[CONFIGURATION] Training Setup:"
-Write-Host "  • Model: NanoDet (Baseline Phase 2 ultra-lightweight)"
-Write-Host "  • Phase: 2 (Baseline - Original Dataset Only)"
-Write-Host "  • Dataset: VisDrone (10 classes, COCO format)"
-Write-Host "  • Epochs: $Epochs"
-if ($QuickTest) {
-    Write-Host "  • Mode: Quick Test (20 epochs, minimal settings)" -ForegroundColor Yellow
-} else {
-    Write-Host "  • Mode: Full Baseline Training"
-}
-Write-Host "  • Augmentation: MINIMAL (resize, normalize only)"
-Write-Host "  • Target: >15% mAP@0.5 (ultra-lightweight baseline)"
-Write-Host "  • Model Size Target: <3MB (most aggressive)"
-Write-Host "  • GPU: NVIDIA RTX 3060 Laptop (5GB)"
-Write-Host "  • Environment: nanodet_env"
-Write-Host ""
-
-Write-Info "[METHODOLOGY] Phase 2 Baseline Features:"
-Write-Host "  • Original Dataset: VisDrone training images ONLY"
-Write-Host "  • No Synthetic Augmentation: No fog, night, blur, rain effects"
-Write-Host "  • Minimal Processing: Resize and normalize only"
-Write-Host "  • Ultra-Lightweight: Simplified NanoDet-like architecture"
-Write-Host "  • True Baseline: Establishes fundamental model capability"
-Write-Host "  • Comparison Reference: For Phase 3 augmentation benefits"
-Write-Host ""
-
-Write-Info "[THESIS OBJECTIVES] Expected Outcomes:"
-Write-Host "  • Baseline mAP@0.5: >15% (ultra-lightweight performance)"
-Write-Host "  • Model Size: <3MB (extreme edge deployment)"
-Write-Host "  • Inference Speed: >10 FPS (real-time capability)"
-Write-Host "  • Methodology: True baseline for Phase 2 vs Phase 3 comparison"
-Write-Host "  • Research Value: Ultra-lightweight baseline establishment"
-Write-Host "  • Next Phase: Phase 3 synthetic augmentation comparison"
-Write-Host ""
-
-# Validate repository location
-$expectedPath = "C:\Users\burak\OneDrive\Desktop\Git Repos\drone-obj-detection-lightweight-ai"
-if ((Get-Location).Path -ne $expectedPath) {
-    Write-Warning "[WARNING] Not in expected repository location"
-    Write-Host "Expected: $expectedPath"
-    Write-Host "Current:  $((Get-Location).Path)"
-    Write-Host ""
-    Write-Info "[NAVIGATION] Changing to repository root..."
+function Test-PythonEnvironment {
+    Write-StatusMessage "Checking Python environment..."
+    
     try {
-        Set-Location $expectedPath
-        Write-Success "[SUCCESS] Changed to repository root"
-    } catch {
-        Write-Error "[ERROR] Failed to change directory: $($_.Exception.Message)"
-        exit 1
-    }
-}
-
-# Validate virtual environment
-$venvPath = ".\venvs\nanodet_env"
-if (-not (Test-Path $venvPath)) {
-    Write-Error "[ERROR] Virtual environment not found: $venvPath"
-    Write-Host "Please create the environment first or use existing NanoDet environment"
-    exit 1
-}
-
-Write-Info "[ACTIVATION] Activating NanoDet environment..."
-
-# Activate virtual environment
-try {
-    & ".\venvs\nanodet_env\Scripts\Activate.ps1"
-    Write-Success "[SUCCESS] Virtual environment activated"
-} catch {
-    Write-Error "[ERROR] Failed to activate virtual environment: $($_.Exception.Message)"
-    exit 1
-}
-
-Write-Host ""
-Write-Info "[VALIDATION] Environment Information:"
-Write-Host "  • Python: $(python --version 2>$null)"
-Write-Host "  • Location: $(Get-Location)"
-
-# Validate PyTorch installation and dependencies
-Write-Info "[VALIDATION] Checking PyTorch installation..."
-try {
-    $torchCheck = python -c "import torch; print('PyTorch:', torch.__version__); print('CUDA Available:', torch.cuda.is_available()); print('GPU Count:', torch.cuda.device_count() if torch.cuda.is_available() else 0); print('PyTorch ready!')" 2>$null
-    if ($LASTEXITCODE -eq 0) {
-        Write-Success "[READY] PyTorch installation validated"
-        Write-Host $torchCheck
-    } else {
-        Write-Error "[ERROR] PyTorch validation failed"
-        exit 1
-    }
-} catch {
-    Write-Error "[ERROR] Failed to validate PyTorch: $($_.Exception.Message)"
-    exit 1
-}
-
-# Validate dataset and COCO format
-Write-Info "[VALIDATION] Checking dataset and COCO format..."
-$datasetPath = ".\data\my_dataset\visdrone"
-$cocoPath = "$datasetPath\nanodet_format"
-
-if (-not (Test-Path $datasetPath)) {
-    Write-Warning "[WARNING] NanoDet dataset not found: $datasetPath"
-    Write-Host "  Will create dummy dataset for testing"
-} else {
-    Write-Success "[READY] VisDrone dataset found"
-}
-
-if (-not (Test-Path $cocoPath)) {
-    Write-Warning "[WARNING] COCO format not found: $cocoPath"
-    Write-Host "  Will create COCO format during training"
-} else {
-    Write-Success "[READY] COCO format found"
-}
-
-Write-Success "[READY] Dataset validation completed:"
-Write-Host "  • Dataset path: $datasetPath"
-Write-Host "  • COCO format: Will be created if needed"
-Write-Host "  • Baseline training: Original dataset only"
-Write-Host "  • Ultra-lightweight model: <3MB target"
-Write-Host "  • Minimal augmentation: Resize + normalize only"
-
-Write-Host ""
-Write-Info "[TRAINING] Starting NanoDet Baseline (Phase 2) training..."
-Write-Host "Training script: src\scripts\visdrone\nanodet\baseline\train_nanodet_baseline.py"
-if ($QuickTest) {
-    Write-Host "Expected duration: 15-25 minutes (quick test - 20 epochs)"
-} else {
-    Write-Host "Expected duration: 2-3 hours (150 epochs baseline training)"
-}
-Write-Host ""
-
-# Prepare Python arguments
-$pythonArgs = @(
-    "src\scripts\visdrone\nanodet\baseline\train_nanodet_baseline.py",
-    "--epochs", $Epochs.ToString()
-)
-
-if ($QuickTest) {
-    $pythonArgs += "--quick-test"
-}
-
-# Execute training
-Write-Info "[EXECUTION] Running Baseline (Phase 2) ultra-lightweight training..."
-Write-Host "Command: python $($pythonArgs -join ' ')"
-Write-Host ""
-
-try {
-    $process = Start-Process -FilePath "python" -ArgumentList $pythonArgs -NoNewWindow -PassThru -Wait
-    
-    if ($process.ExitCode -eq 0) {
-        Write-Host ""
-        Write-Success "[SUCCESS] NanoDet Baseline (Phase 2) training completed successfully!"
-        Write-Host ""
-        Write-Info "[RESULTS] Training Summary:"
-        Write-Host "  • Model: NanoDet Baseline (Phase 2 - Original Dataset Only)"
-        Write-Host "  • Epochs: $Epochs"
-        Write-Host "  • Dataset: VisDrone (original training data only)"
-        Write-Host "  • Results: runs\train\nanodet_baseline_*"
-        Write-Host "  • Model Size: <3MB (ultra-lightweight)"
-        Write-Host ""
-        Write-Info "[METHODOLOGY COMPLIANCE] Phase Analysis:"
-        Write-Host "  • Phase 2 Baseline: TRUE baseline established (original dataset only)"
-        Write-Host "  • Target Achievement: >15% mAP@0.5 (ultra-lightweight baseline)"
-        Write-Host "  • No Augmentation: Minimal processing for true baseline"
-        Write-Host "  • Comparison Ready: Baseline for Phase 3 synthetic augmentation"
-        Write-Host "  • Thesis Value: Ultra-lightweight baseline demonstration"
-        Write-Host ""
-        Write-Info "[NEXT STEPS] After baseline completion:"
-        Write-Host "  1. Execute Phase 3 (Trial-1) synthetic augmentation training"
-        Write-Host "  2. Compare Baseline vs Trial-1 performance (Phase 2 vs Phase 3)"
-        Write-Host "  3. Analyze mAP@0.5, model size, inference speed"
-        Write-Host "  4. Document ultra-lightweight synthetic augmentation benefits"
-        Write-Host "  5. Add to comprehensive multi-model comparison framework"
+        # Verify environment
+        $pythonVersion = & python --version 2>&1
+        Write-StatusMessage "Python version: $pythonVersion"
         
-    } else {
-        Write-Error "[ERROR] Training failed with exit code: $($process.ExitCode)"
-        Write-Host "Check the training logs for detailed error information."
-        exit 1
+        # Check key packages
+        $packages = @("torch", "torchvision", "opencv-python", "pycocotools")
+        foreach ($package in $packages) {
+            try {
+                $packageImport = $package.Replace('-', '_')
+                & python -c "import $packageImport; print('$package OK')" 2>$null
+                if ($LASTEXITCODE -eq 0) {
+                    Write-StatusMessage "${package}: Available" "SUCCESS"
+                } else {
+                    Write-StatusMessage "${package}: Not found" "WARNING"
+                }
+            } catch {
+                Write-StatusMessage "${package}: Error checking" "WARNING"
+            }
+        }
+        
+        Write-StatusMessage "Python environment check completed" "SUCCESS"
     }
-    
-} catch {
-    Write-Error "[ERROR] Failed to execute training: $($_.Exception.Message)"
-    exit 1
+    catch {
+        throw "Failed to check Python environment: $_"
+    }
 }
 
-Write-Host ""
-Write-Host "================================================================" -ForegroundColor Green
-Write-Success "[COMPLETED] NanoDet Baseline (Phase 2) Ultra-Lightweight Training Session Finished"
-Write-Host "================================================================" -ForegroundColor Green
+function Invoke-Training {
+    param([int]$Epochs, [bool]$QuickTest)
+    
+    Write-StatusMessage "Starting NanoDet Phase 1 (True Baseline) training..."
+    Write-StatusMessage "Training Configuration:"
+    Write-StatusMessage "  - Epochs: $Epochs"
+    Write-StatusMessage "  - Quick Test: $QuickTest"
+    Write-StatusMessage "  - Phase: 1 (True Baseline - NO Augmentation)"
+    Write-StatusMessage "  - Protocol: Version 2.0 compliant"
+    Write-StatusMessage ""
+    
+    try {
+        # Change to project root directory
+        Push-Location $ProjectRoot
+        
+        # Prepare Python arguments with proper quoting
+        $pythonArgs = @(
+            "`"$ScriptPath`"",
+            "--epochs", $Epochs.ToString()
+        )
+        
+        if ($QuickTest) {
+            $pythonArgs += "--quick-test"
+            Write-StatusMessage "Quick test mode enabled (20 epochs)" "WARNING"
+        }
+        
+        Write-StatusMessage "Executing training command..."
+        Write-StatusMessage "Command: python $($pythonArgs -join ' ')"
+        Write-StatusMessage ""
+        
+        # Execute training with proper path handling
+        $process = Start-Process -FilePath "python" -ArgumentList $pythonArgs -NoNewWindow -PassThru -Wait -WorkingDirectory $ProjectRoot
+        
+        if ($process.ExitCode -eq 0) {
+            Write-StatusMessage "Training completed successfully!" "SUCCESS"
+            return $true
+        } else {
+            Write-StatusMessage "Training failed with exit code: $($process.ExitCode)" "ERROR"
+            return $false
+        }
+    }
+    catch {
+        Write-StatusMessage "Training execution failed: $_" "ERROR"
+        return $false
+    }
+    finally {
+        Pop-Location
+    }
+}
+
+function Show-CompletionSummary {
+    param([bool]$Success)
+    
+    Write-Host ""
+    Write-Host "=" * 80 -ForegroundColor Cyan
+    
+    if ($Success) {
+        Write-Host "[SUCCESS] NanoDet Phase 1 (True Baseline) Training Complete!" -ForegroundColor Green
+        Write-Host ""
+        Write-Host "METHODOLOGY VALIDATION:" -ForegroundColor Yellow
+        Write-Host "  ✅ Phase 1 true baseline training completed" -ForegroundColor Green
+        Write-Host "  ✅ NO AUGMENTATION applied (Protocol v2.0 compliance)" -ForegroundColor Green
+        Write-Host "  ✅ Original VisDrone dataset only" -ForegroundColor Green
+        Write-Host "  ✅ Ultra-lightweight model architecture" -ForegroundColor Green
+        Write-Host ""
+        Write-Host "EXPECTED RESULTS:" -ForegroundColor Yellow
+        Write-Host "  • Target Performance: >12% mAP@0.5" -ForegroundColor Magenta
+        Write-Host "  • Model Size: <3MB" -ForegroundColor Magenta
+        Write-Host "  • True baseline for Phase 1 vs Phase 2 comparison" -ForegroundColor Magenta
+        Write-Host ""
+        Write-Host "NEXT STEPS:" -ForegroundColor Yellow
+        Write-Host "  1. Review training results in runs/train/ directory" -ForegroundColor White
+        Write-Host "  2. Run Phase 2 (Environmental Robustness) training" -ForegroundColor White
+        Write-Host "  3. Compare Phase 1 vs Phase 2 performance" -ForegroundColor White
+        Write-Host "  4. Execute comprehensive evaluation framework" -ForegroundColor White
+    } else {
+        Write-Host "[ERROR] NanoDet Phase 1 Training Failed!" -ForegroundColor Red
+        Write-Host ""
+        Write-Host "TROUBLESHOOTING:" -ForegroundColor Yellow
+        Write-Host "  1. Check virtual environment activation" -ForegroundColor White
+        Write-Host "  2. Verify all required packages are installed" -ForegroundColor White
+        Write-Host "  3. Ensure COCO format data is available" -ForegroundColor White
+        Write-Host "  4. Check CUDA/GPU compatibility" -ForegroundColor White
+        Write-Host "  5. Review error logs for detailed information" -ForegroundColor White
+    }
+    
+    Write-Host "=" * 80 -ForegroundColor Cyan
+}
+
+# Main execution
+try {
+    Write-Header "NanoDet Phase 1 (True Baseline) Training - VisDrone Dataset" "1 (True Baseline - NO Augmentation)"
+    
+    # Validate prerequisites
+    Test-Prerequisites
+    
+    # Check Python environment (assumes virtual environment is already activated)
+    Test-PythonEnvironment
+    
+    # Execute training
+    $trainingSuccess = Invoke-Training -Epochs $Epochs -QuickTest $QuickTest.IsPresent
+    
+    # Show completion summary
+    Show-CompletionSummary -Success $trainingSuccess
+    
+    if (-not $trainingSuccess) {
+        exit 1
+    }
+}
+catch {
+    Write-StatusMessage "Script execution failed: $_" "ERROR"
+    Write-Host ""
+    Write-Host "=" * 80 -ForegroundColor Red
+    Write-Host "[ERROR] NanoDet Phase 1 Training Failed!" -ForegroundColor Red
+    Write-Host "Error: $_" -ForegroundColor Red
+    Write-Host "=" * 80 -ForegroundColor Red
+    exit 1
+}
