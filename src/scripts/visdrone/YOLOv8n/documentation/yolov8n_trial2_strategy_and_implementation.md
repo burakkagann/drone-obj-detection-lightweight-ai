@@ -109,7 +109,7 @@ patience: 25           # Extended early stopping
 # Training parameters (Enhanced Small Object Detection)
 train_params = {
     'data': yolov8n_visdrone_config.yaml,
-    'epochs': 40,                    # Balanced training duration
+    'epochs': 50,                    # Balanced training duration
     'imgsz': 832,                   # CRITICAL: Higher resolution
     'batch': 12,                    # GPU memory optimized
     'lr0': 0.003,                   # Fine-grained learning
